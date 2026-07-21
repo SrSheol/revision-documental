@@ -356,6 +356,12 @@
   .chk:hover{border-color:var(--azul);}
   .chk.ok{background:var(--verde);border-color:var(--verde);color:#fff;}
   .chk.bad{background:var(--rojo);border-color:var(--rojo);color:#fff;}
+  /* Cuando el check tiene color de usuario asignado (inline style), se
+     refuerza el grosor del borde para que el color de usuario destaque
+     incluso sobre el fondo verde/rojo del estado. */
+  .chk.user-colored{
+    border-width:3px;
+  }
 
   .rev-date{
     width:118px;
@@ -429,6 +435,157 @@
   }
   @keyframes spin{to{transform:rotate(360deg);}}
 
+  /* ===================== MODAL DE LOGIN ===================== */
+  .login-overlay{
+    position:fixed;
+    inset:0;
+    background:rgba(31,111,117,0.55);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    z-index:200;
+    padding:16px;
+  }
+  .login-card{
+    background:#fff;
+    border-radius:14px;
+    padding:26px 26px 22px 26px;
+    width:100%;
+    max-width:360px;
+    box-shadow:0 10px 40px rgba(0,0,0,0.25);
+    text-align:center;
+  }
+  .login-card h2{
+    margin:0 0 4px 0;
+    font-size:18px;
+    color:var(--azul-oscuro);
+  }
+  .login-card p{
+    margin:0 0 16px 0;
+    font-size:12.5px;
+    color:var(--texto-suave);
+  }
+  .login-select{
+    width:100%;
+    padding:10px 12px;
+    border-radius:8px;
+    border:1.5px solid var(--gris-borde);
+    font-size:14px;
+    font-weight:600;
+    color:var(--texto);
+    background:#fff;
+    margin-bottom:14px;
+    cursor:pointer;
+  }
+  .login-btn{
+    width:100%;
+    background:var(--azul-oscuro);
+    color:#fff;
+    border:none;
+    border-radius:8px;
+    padding:11px;
+    font-size:14px;
+    font-weight:700;
+    cursor:pointer;
+    transition:background .15s ease;
+  }
+  .login-btn:hover{background:var(--azul);}
+  .login-error{
+    margin-top:10px;
+    font-size:12px;
+    color:var(--rojo);
+    display:none;
+  }
+  .current-user-badge{
+    font-size:11px;
+    padding:5px 10px;
+    border-radius:6px;
+    background:rgba(255,255,255,0.15);
+    white-space:nowrap;
+    display:inline-flex;
+    align-items:center;
+    gap:5px;
+  }
+  .current-user-dot{
+    width:9px;
+    height:9px;
+    border-radius:50%;
+    background:#fff;
+    display:inline-block;
+  }
+  .btn-cambiar-usuario{
+    background:transparent;
+    border:1.5px solid #fff;
+    color:#fff;
+    border-radius:6px;
+    padding:4px 8px;
+    font-size:11px;
+    cursor:pointer;
+  }
+  .btn-cambiar-usuario:hover{background:rgba(255,255,255,0.15);}
+
+  /* ===================== MODAL DE ALERTA (límite de revisiones, etc.) ===================== */
+  .alert-modal-overlay{
+    position:fixed;
+    inset:0;
+    background:rgba(31,111,117,0.55);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    z-index:300;
+    padding:16px;
+  }
+  .alert-modal-card{
+    background:#fff;
+    border-radius:14px;
+    padding:28px 26px 24px 26px;
+    width:100%;
+    max-width:380px;
+    box-shadow:0 10px 40px rgba(0,0,0,0.28);
+    text-align:center;
+  }
+  .alert-modal-card .alert-icon{
+    font-size:34px;
+    margin-bottom:8px;
+  }
+  .alert-modal-card h2{
+    margin:0 0 10px 0;
+    font-size:17px;
+    color:var(--rojo);
+  }
+  .alert-modal-card p{
+    margin:0 0 20px 0;
+    font-size:13.5px;
+    color:var(--texto);
+    line-height:1.5;
+  }
+  .alert-modal-btn{
+    background:var(--azul-oscuro);
+    color:#fff;
+    border:none;
+    border-radius:8px;
+    padding:10px 24px;
+    font-size:14px;
+    font-weight:700;
+    cursor:pointer;
+    transition:background .15s ease;
+  }
+  .alert-modal-btn:hover{background:var(--azul);}
+
+  /* ===================== TABLA MANEJO INTERNO ===================== */
+  td.manejo-cell{
+    text-align:left;
+    font-weight:600;
+    color:var(--verde);
+    white-space:nowrap;
+  }
+  .manejo-empty{
+    padding:22px;
+    text-align:center;
+    color:var(--texto-suave);
+    font-size:13px;
+  }
+
   footer{
     text-align:center;
     padding:14px;
@@ -476,11 +633,39 @@
   <div>Cargando datos desde Firebase...</div>
 </div>
 
+<!-- ===================== MODAL DE LOGIN (nombre de usuario) ===================== -->
+<div class="login-overlay" id="loginOverlay" style="display:none;">
+  <div class="login-card">
+    <h2>👋 Identifícate</h2>
+    <p>Selecciona tu nombre para continuar. Esto se usará para marcar tus revisiones con tu color.</p>
+    <select id="loginSelect" class="login-select">
+      <option value="" disabled selected>Selecciona tu nombre...</option>
+    </select>
+    <button class="login-btn" id="loginBtn">Entrar</button>
+    <div class="login-error" id="loginError">Selecciona un nombre válido de la lista.</div>
+  </div>
+</div>
+
+<!-- ===================== MODAL DE ALERTA (límite de revisiones, etc.) ===================== -->
+<div class="alert-modal-overlay" id="alertModalOverlay" style="display:none;">
+  <div class="alert-modal-card">
+    <div class="alert-icon">⚠️</div>
+    <h2>Límite alcanzado</h2>
+    <p id="alertModalMsg"></p>
+    <button class="alert-modal-btn" id="alertModalBtn">Entendido</button>
+  </div>
+</div>
+
 <header>
   <h1>📋 Revisión Documental
     <span>Control de expedientes por OT · D1–D22</span>
   </h1>
   <div class="header-actions">
+    <span class="current-user-badge" id="currentUserBadge" style="display:none;">
+      <span class="current-user-dot" id="currentUserDot"></span>
+      <span id="currentUserNombre"></span>
+    </span>
+    <button class="btn-cambiar-usuario" id="btnCambiarUsuario">Cambiar usuario</button>
     <span class="save-status" id="saveStatus">✓ Sincronizado</span>
     <button class="btn btn-amarillo" id="btnExportPNG">🖼 PNG</button>
     <button class="btn btn-blanco" id="btnExportXLSX">📊 Excel</button>
@@ -490,6 +675,7 @@
 <div class="tabs">
   <button class="tab-btn active" data-tab="docs">📁 Documentos (D1–D22)</button>
   <button class="tab-btn" data-tab="revs">✅ Revisiones</button>
+  <button class="tab-btn" data-tab="manejo">📦 Manejo Interno</button>
 </div>
 
 <main>
@@ -544,7 +730,7 @@
       </div>
     </div>
     <div style="font-size:12px;color:var(--texto-suave);margin-bottom:10px;">
-      Cada OT tiene su propio número de revisiones. Usa los botones ➕ / ➖ de cada fila para agregar o quitar revisiones individuales. Al marcar el check, la fecha se llena automáticamente con el día de hoy.
+      Cada OT tiene su propio número de revisiones. Usa los botones ➕ / ➖ de cada fila para agregar o quitar revisiones individuales. Al marcar el check, la fecha se llena automáticamente con el día de hoy. Al completar la última revisión posible, la OT pasa automáticamente a "Manejo Interno".
     </div>
     <div class="table-wrap" id="tableWrapRevs">
       <table id="tableRevs">
@@ -555,6 +741,34 @@
           </tr>
         </thead>
         <tbody id="revsBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ===================== PANEL MANEJO INTERNO ===================== -->
+  <section class="panel" id="panel-manejo" style="display:none;">
+    <div class="panel-toolbar">
+      <div class="grupo-select-wrap">
+        <label for="grupoSelectManejo">Grupo:</label>
+        <select id="grupoSelectManejo" class="grupo-select"></select>
+      </div>
+      <div class="search-box">
+        <input type="text" id="searchManejo" placeholder="Buscar por OT o número de permiso...">
+      </div>
+      <div style="font-size:12px;color:var(--texto-suave);">
+        Se agregan automáticamente las OT que completaron su última revisión posible.
+      </div>
+    </div>
+    <div class="table-wrap" id="tableWrapManejo">
+      <table id="tableManejo">
+        <thead>
+          <tr>
+            <th class="sticky-col" style="min-width:60px;">OT</th>
+            <th class="sticky-col2" style="min-width:170px;">Permiso CRE/CNE</th>
+            <th style="min-width:220px;">Estado</th>
+          </tr>
+        </thead>
+        <tbody id="manejoBody"></tbody>
       </table>
     </div>
   </section>
@@ -585,6 +799,34 @@ const db = firebase.firestore();
 
 // Documento aislado donde vive toda la información de esta app
 const docRef = db.collection('revisiones').doc('revision-documental-v1');
+
+/* =====================================================
+   USUARIOS PERMITIDOS Y COLORES POR USUARIO
+   (solo se usan visualmente en la sección Documentos D1-D22)
+===================================================== */
+const USUARIOS = ["Juan","Odalis","Omar","Yulandy","Judith","César","Pablo","Edwin"];
+
+// Edwin no tiene color especial: usa el estilo default (null = sin color).
+const USUARIO_COLORES = {
+  "Juan":    "#0dbf53",
+  "Odalis":  "#cf5ecb",
+  "Omar":    "#2f899e",
+  "Yulandy": "#b64aea",
+  "Judith":  "#3339d2",
+  "César":   "#ad8d02",
+  "Pablo":   "#d4792b",
+  "Edwin":   null
+};
+
+const LOGIN_STORAGE_KEY = 'revDoc_usuarioActual';
+
+// Usuario actualmente identificado en este navegador (persistido en localStorage).
+let usuarioActual = localStorage.getItem(LOGIN_STORAGE_KEY) || null;
+if(usuarioActual && !USUARIOS.includes(usuarioActual)){
+  // Si el nombre guardado ya no es válido (p.ej. cambió la lista), se limpia.
+  usuarioActual = null;
+  localStorage.removeItem(LOGIN_STORAGE_KEY);
+}
 
 /* =====================================================
    DATOS INICIALES (catálogo de OT / permisos)
@@ -900,8 +1142,9 @@ function estadoVacio(){
   const docs = {};
   const revs = {};
   DATA_INICIAL.forEach(item=>{
-    // Cada documento ahora guarda estado (ok/bad/null) + comentario
-    docs[item.ot] = Array.from({length:NUM_DOCS}, ()=>({ estado: null, comentario: '' }));
+    // Cada documento ahora guarda estado (ok/bad/null) + comentario +
+    // el usuario que realizó la marca (para pintar el borde del check).
+    docs[item.ot] = Array.from({length:NUM_DOCS}, ()=>({ estado: null, comentario: '', usuario: null }));
     // Cada OT arranca con exactamente 1 revisión
     revs[item.ot] = [ { checked:false, fecha:'' } ];
   });
@@ -938,9 +1181,9 @@ function fusionarEstado(remoto){
       for(let i=0;i<NUM_DOCS;i++){
         const d = docsRemotos[i];
         if(d && typeof d === 'object'){
-          arr.push({ estado: d.estado || null, comentario: d.comentario || '' });
+          arr.push({ estado: d.estado || null, comentario: d.comentario || '', usuario: d.usuario || null });
         }else{
-          arr.push({ estado:null, comentario:'' });
+          arr.push({ estado:null, comentario:'', usuario:null });
         }
       }
       resultado.docs[item.ot] = arr;
@@ -1081,6 +1324,93 @@ function copiarTextoFallback(texto){
 }
 
 /* =====================================================
+   MODAL DE ALERTA (reemplaza los alert() nativos para
+   mensajes importantes como el límite de revisiones)
+===================================================== */
+function mostrarAlerta(mensaje){
+  const overlay = document.getElementById('alertModalOverlay');
+  const msgEl = document.getElementById('alertModalMsg');
+  if(!overlay || !msgEl) return;
+  msgEl.textContent = mensaje;
+  overlay.style.display = 'flex';
+}
+
+function ocultarAlerta(){
+  const overlay = document.getElementById('alertModalOverlay');
+  if(overlay) overlay.style.display = 'none';
+}
+
+document.getElementById('alertModalBtn').addEventListener('click', ocultarAlerta);
+document.getElementById('alertModalOverlay').addEventListener('click', (e)=>{
+  if(e.target.id === 'alertModalOverlay') ocultarAlerta();
+});
+
+/* =====================================================
+   LOGIN SIMPLE (selección de nombre, sin contraseña)
+===================================================== */
+
+// Actualiza el badge del header con el nombre/color del usuario actual.
+function actualizarBadgeUsuario(){
+  const badge = document.getElementById('currentUserBadge');
+  const dot = document.getElementById('currentUserDot');
+  const nombreEl = document.getElementById('currentUserNombre');
+  if(!badge || !dot || !nombreEl) return;
+
+  if(usuarioActual){
+    badge.style.display = 'inline-flex';
+    nombreEl.textContent = usuarioActual;
+    const color = USUARIO_COLORES[usuarioActual];
+    dot.style.background = color || '#ffffff';
+  }else{
+    badge.style.display = 'none';
+  }
+}
+
+// Llena el <select> del modal de login con los nombres permitidos.
+function poblarSelectLogin(){
+  const sel = document.getElementById('loginSelect');
+  sel.querySelectorAll('option:not(:first-child)').forEach(o=>o.remove());
+  USUARIOS.forEach(nombre=>{
+    const opt = document.createElement('option');
+    opt.value = nombre;
+    opt.textContent = nombre;
+    sel.appendChild(opt);
+  });
+}
+
+// Muestra el modal de login (bloquea el resto de la app hasta seleccionar nombre).
+function mostrarModalLogin(){
+  poblarSelectLogin();
+  document.getElementById('loginSelect').value = '';
+  document.getElementById('loginError').style.display = 'none';
+  document.getElementById('loginOverlay').style.display = 'flex';
+}
+
+function ocultarModalLogin(){
+  document.getElementById('loginOverlay').style.display = 'none';
+}
+
+// Confirma la selección de nombre del modal de login.
+function confirmarLogin(){
+  const sel = document.getElementById('loginSelect');
+  const nombre = sel.value;
+  if(!nombre || !USUARIOS.includes(nombre)){
+    document.getElementById('loginError').style.display = 'block';
+    return;
+  }
+  usuarioActual = nombre;
+  localStorage.setItem(LOGIN_STORAGE_KEY, usuarioActual);
+  actualizarBadgeUsuario();
+  ocultarModalLogin();
+  iniciarApp();
+}
+
+document.getElementById('loginBtn').addEventListener('click', confirmarLogin);
+document.getElementById('btnCambiarUsuario').addEventListener('click', ()=>{
+  mostrarModalLogin();
+});
+
+/* =====================================================
    BARRA DE SCROLL HORIZONTAL FIJA (sincronizada)
 ===================================================== */
 
@@ -1088,7 +1418,9 @@ function copiarTextoFallback(texto){
 function getActiveTableWrap(){
   const activeBtn = document.querySelector('.tab-btn.active');
   const tab = activeBtn ? activeBtn.dataset.tab : 'docs';
-  return tab==='docs' ? document.getElementById('tableWrapDocs') : document.getElementById('tableWrapRevs');
+  if(tab==='docs') return document.getElementById('tableWrapDocs');
+  if(tab==='revs') return document.getElementById('tableWrapRevs');
+  return document.getElementById('tableWrapManejo');
 }
 
 let sincronizandoScroll = false;
@@ -1127,6 +1459,7 @@ function initScrollSync(){
   const bar = document.getElementById('bottomScrollbar');
   const wrapDocs = document.getElementById('tableWrapDocs');
   const wrapRevs = document.getElementById('tableWrapRevs');
+  const wrapManejo = document.getElementById('tableWrapManejo');
 
   bar.addEventListener('scroll', ()=>{
     if(sincronizandoScroll) return;
@@ -1137,7 +1470,7 @@ function initScrollSync(){
     sincronizandoScroll = false;
   });
 
-  [wrapDocs, wrapRevs].forEach(wrap=>{
+  [wrapDocs, wrapRevs, wrapManejo].forEach(wrap=>{
     if(!wrap) return;
     wrap.addEventListener('scroll', ()=>{
       if(sincronizandoScroll) return;
@@ -1157,7 +1490,11 @@ function initScrollSync(){
    RENDER: SELECTOR DE GRUPO
 ===================================================== */
 function poblarSelectGrupos(){
-  const selects = [document.getElementById('grupoSelectDocs'), document.getElementById('grupoSelectRevs')];
+  const selects = [
+    document.getElementById('grupoSelectDocs'),
+    document.getElementById('grupoSelectRevs'),
+    document.getElementById('grupoSelectManejo')
+  ];
   selects.forEach(sel=>{
     if(!sel) return;
     sel.innerHTML = '';
@@ -1175,13 +1512,16 @@ function cambiarGrupo(nuevoGrupo){
   grupoActual = nuevoGrupo;
   const selDocs = document.getElementById('grupoSelectDocs');
   const selRevs = document.getElementById('grupoSelectRevs');
+  const selManejo = document.getElementById('grupoSelectManejo');
   if(selDocs) selDocs.value = grupoActual;
   if(selRevs) selRevs.value = grupoActual;
+  if(selManejo) selManejo.value = grupoActual;
 
   renderDocsBody(document.getElementById('searchDocs').value);
   renderStats();
   renderRevsHead();
   renderRevsBody(document.getElementById('searchRevs').value);
+  renderManejoInterno(document.getElementById('searchManejo').value);
 }
 
 /* =====================================================
@@ -1247,6 +1587,17 @@ function renderDocsBody(filter){
       else if(docData.estado==='bad'){ btn.classList.add('bad'); btn.textContent='❌'; }
       else { btn.textContent=''; }
 
+      // Color por usuario: si el documento fue marcado por alguien con
+      // color asignado, se pinta el borde del check con ese color.
+      if((docData.estado==='ok' || docData.estado==='bad') && docData.usuario){
+        const colorUsuario = USUARIO_COLORES[docData.usuario];
+        if(colorUsuario){
+          btn.classList.add('user-colored');
+          btn.style.borderColor = colorUsuario;
+          btn.title = 'Marcado por ' + docData.usuario;
+        }
+      }
+
       let clickTimer = null;
       btn.addEventListener('click', ()=>{
         if(clickTimer){
@@ -1254,6 +1605,7 @@ function renderDocsBody(filter){
           clickTimer = null;
           // doble click -> tache
           docData.estado = (docData.estado==='bad') ? null : 'bad';
+          docData.usuario = docData.estado ? (usuarioActual || null) : null;
           guardarEstado();
           renderDocsBody(document.getElementById('searchDocs').value);
           renderStats();
@@ -1261,6 +1613,7 @@ function renderDocsBody(filter){
           clickTimer = setTimeout(()=>{
             // click simple -> palomita
             docData.estado = (docData.estado==='ok') ? null : 'ok';
+            docData.usuario = docData.estado ? (usuarioActual || null) : null;
             guardarEstado();
             renderDocsBody(document.getElementById('searchDocs').value);
             renderStats();
@@ -1402,18 +1755,19 @@ function renderRevsHead(){
 
 function agregarRevisionOT(ot){
   if(state.revs[ot].length >= state.maxRevisiones){
-    alert('Esta OT ya alcanzó el límite máximo de revisiones configurado ('+state.maxRevisiones+').');
+    mostrarAlerta('Esta OT ya alcanzó el límite máximo de revisiones configurado ('+state.maxRevisiones+'). No se puede agregar más.');
     return;
   }
   state.revs[ot].push({ checked:false, fecha:'' });
   guardarEstado();
   renderRevsHead();
   renderRevsBody(document.getElementById('searchRevs').value);
+  renderManejoInterno(document.getElementById('searchManejo').value);
 }
 
 function quitarRevisionOT(ot){
   if(state.revs[ot].length <= 1){
-    alert('Debe quedar al menos una revisión para esta OT.');
+    mostrarAlerta('Debe quedar al menos una revisión para esta OT.');
     return;
   }
   if(!confirm('¿Eliminar la última revisión de la OT '+ot+'? Se perderán sus datos.')) return;
@@ -1421,6 +1775,7 @@ function quitarRevisionOT(ot){
   guardarEstado();
   renderRevsHead();
   renderRevsBody(document.getElementById('searchRevs').value);
+  renderManejoInterno(document.getElementById('searchManejo').value);
 }
 
 function fechaHoy(){
@@ -1483,6 +1838,9 @@ function renderRevsBody(filter){
           }
           guardarEstado();
           renderRevsBody(document.getElementById('searchRevs').value);
+          // Si esta era la última revisión posible de la OT (revsOT.length === maxRevisiones),
+          // al marcarla/desmarcarla la OT entra o sale automáticamente de "Manejo Interno".
+          renderManejoInterno(document.getElementById('searchManejo').value);
         });
 
         dateInput.addEventListener('change', ()=>{
@@ -1539,6 +1897,68 @@ function renderRevsBody(filter){
 }
 
 /* =====================================================
+   RENDER: TABLERO DE MANEJO INTERNO
+   Una OT aparece aquí automáticamente cuando alcanzó su
+   número máximo de revisiones configurado (state.maxRevisiones)
+   y la última de ellas está marcada como completada (✅).
+   Se calcula siempre a partir del estado actual, así que se
+   mantiene sincronizado sin necesidad de guardar una lista aparte.
+===================================================== */
+function estaListaParaManejoInterno(ot){
+  const revsOT = state.revs[ot];
+  if(!revsOT || revsOT.length < state.maxRevisiones) return false;
+  const ultima = revsOT[revsOT.length - 1];
+  return !!(ultima && ultima.checked);
+}
+
+function renderManejoInterno(filter){
+  const body = document.getElementById('manejoBody');
+  body.innerHTML = '';
+  const f = (filter||'').trim().toLowerCase();
+
+  const itemsListos = state.items.filter(item=>{
+    if(item.grupo !== grupoActual) return false;
+    if(f && !(item.ot.toLowerCase().includes(f) || item.permiso.toLowerCase().includes(f))) return false;
+    return estaListaParaManejoInterno(item.ot);
+  });
+
+  if(!itemsListos.length){
+    const tr = document.createElement('tr');
+    const td = document.createElement('td');
+    td.colSpan = 3;
+    td.className = 'manejo-empty';
+    td.textContent = 'Aún no hay OT que hayan completado su última revisión.';
+    tr.appendChild(td);
+    body.appendChild(tr);
+    actualizarBottomScrollbar();
+    return;
+  }
+
+  itemsListos.forEach(item=>{
+    const tr = document.createElement('tr');
+
+    const tdOt = document.createElement('td');
+    tdOt.className = 'sticky-col ot-cell';
+    tdOt.textContent = item.ot;
+    tr.appendChild(tdOt);
+
+    const tdPermiso = document.createElement('td');
+    tdPermiso.className = 'sticky-col2 permiso-cell';
+    tdPermiso.textContent = item.permiso;
+    tr.appendChild(tdPermiso);
+
+    const tdEstado = document.createElement('td');
+    tdEstado.className = 'manejo-cell';
+    tdEstado.textContent = '✅ Listo para Manejo Interno';
+    tr.appendChild(tdEstado);
+
+    body.appendChild(tr);
+  });
+
+  actualizarBottomScrollbar();
+}
+
+/* =====================================================
    TABS
 ===================================================== */
 document.querySelectorAll('.tab-btn').forEach(btn=>{
@@ -1548,6 +1968,10 @@ document.querySelectorAll('.tab-btn').forEach(btn=>{
     const tab = btn.dataset.tab;
     document.getElementById('panel-docs').style.display = tab==='docs' ? 'block' : 'none';
     document.getElementById('panel-revs').style.display = tab==='revs' ? 'block' : 'none';
+    document.getElementById('panel-manejo').style.display = tab==='manejo' ? 'block' : 'none';
+    if(tab==='manejo'){
+      renderManejoInterno(document.getElementById('searchManejo').value);
+    }
     actualizarBottomScrollbar();
   });
 });
@@ -1561,6 +1985,9 @@ document.getElementById('searchDocs').addEventListener('input', e=>{
 document.getElementById('searchRevs').addEventListener('input', e=>{
   renderRevsBody(e.target.value);
 });
+document.getElementById('searchManejo').addEventListener('input', e=>{
+  renderManejoInterno(e.target.value);
+});
 
 /* =====================================================
    SELECTOR DE GRUPO (eventos)
@@ -1569,6 +1996,9 @@ document.getElementById('grupoSelectDocs').addEventListener('change', e=>{
   cambiarGrupo(e.target.value);
 });
 document.getElementById('grupoSelectRevs').addEventListener('change', e=>{
+  cambiarGrupo(e.target.value);
+});
+document.getElementById('grupoSelectManejo').addEventListener('change', e=>{
   cambiarGrupo(e.target.value);
 });
 
@@ -1582,6 +2012,7 @@ document.getElementById('maxRevInput').addEventListener('change', e=>{
   e.target.value = val;
   guardarEstado();
   renderRevsBody(document.getElementById('searchRevs').value);
+  renderManejoInterno(document.getElementById('searchManejo').value);
 });
 
 /* =====================================================
@@ -1589,7 +2020,9 @@ document.getElementById('maxRevInput').addEventListener('change', e=>{
 ===================================================== */
 document.getElementById('btnExportPNG').addEventListener('click', ()=>{
   const activeTab = document.querySelector('.tab-btn.active').dataset.tab;
-  const target = activeTab==='docs' ? document.getElementById('panel-docs') : document.getElementById('panel-revs');
+  let target = document.getElementById('panel-docs');
+  if(activeTab==='revs') target = document.getElementById('panel-revs');
+  else if(activeTab==='manejo') target = document.getElementById('panel-manejo');
   html2canvas(target, { scale:2, backgroundColor:'#ffffff' }).then(canvas=>{
     const link = document.createElement('a');
     link.download = 'revision_documental_'+activeTab+'.png';
@@ -1655,6 +2088,16 @@ document.getElementById('btnExportXLSX').addEventListener('click', ()=>{
   const wsRevs = XLSX.utils.aoa_to_sheet(revRows);
   XLSX.utils.book_append_sheet(wb, wsRevs, 'Revisiones');
 
+  // Hoja Manejo Interno
+  const manejoRows = [['OT','Permiso','Estado']];
+  itemsGrupo.forEach(item=>{
+    if(estaListaParaManejoInterno(item.ot)){
+      manejoRows.push([item.ot, item.permiso, 'Listo para Manejo Interno']);
+    }
+  });
+  const wsManejo = XLSX.utils.aoa_to_sheet(manejoRows);
+  XLSX.utils.book_append_sheet(wb, wsManejo, 'Manejo Interno');
+
   XLSX.writeFile(wb, 'revision_documental_'+grupoActual+'.xlsx');
 });
 
@@ -1668,14 +2111,30 @@ function renderAll(){
   renderStats();
   renderRevsHead();
   renderRevsBody('');
+  renderManejoInterno('');
   document.getElementById('maxRevInput').value = state.maxRevisiones;
 }
 
-(async function iniciar(){
+// Inicializa la app (carga Firebase + primer render). Solo se llama
+// una vez que el usuario ya está identificado (login resuelto).
+async function iniciarApp(){
   await cargarEstado();
   renderAll();
   initScrollSync();
   actualizarBottomScrollbar();
+}
+
+(function iniciar(){
+  actualizarBadgeUsuario();
+  if(usuarioActual){
+    // Ya había un usuario guardado en este navegador: se salta el login.
+    document.getElementById('loadingOverlay').style.display = 'flex';
+    iniciarApp();
+  }else{
+    // No hay usuario identificado: se pide el login antes de cargar datos.
+    document.getElementById('loadingOverlay').style.display = 'none';
+    mostrarModalLogin();
+  }
 })();
 </script>
 </body>
