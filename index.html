@@ -1,0 +1,1682 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Revisión Documental</title>
+
+<!-- Librerías de exportación -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+<!-- Firebase (SDK compat) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+
+<style>
+  :root{
+    --azul: #60D8DF;
+    --azul-oscuro: #1F6F75;
+    --amarillo: #FFC93C;
+    --verde: #3CCF7A;
+    --rojo: #FF5C5C;
+    --gris-fondo: #F4F7F8;
+    --gris-borde: #DCE4E6;
+    --texto: #223133;
+    --texto-suave: #5B6C6E;
+    --blanco: #FFFFFF;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+    background:linear-gradient(180deg,var(--gris-fondo) 0%,#E9F6F7 100%);
+    color:var(--texto);
+    min-height:100vh;
+    padding-bottom:24px;
+  }
+  header{
+    background:linear-gradient(90deg,var(--azul-oscuro),var(--azul));
+    color:#fff;
+    padding:18px 24px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    flex-wrap:wrap;
+    gap:12px;
+    box-shadow:0 2px 8px rgba(0,0,0,0.15);
+    position:sticky;
+    top:0;
+    z-index:50;
+  }
+  header h1{
+    margin:0;
+    font-size:22px;
+    letter-spacing:0.3px;
+  }
+  header h1 span{
+    display:block;
+    font-size:12px;
+    font-weight:400;
+    opacity:0.85;
+  }
+  .header-actions{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+    align-items:center;
+  }
+  .save-status{
+    font-size:11px;
+    padding:5px 10px;
+    border-radius:6px;
+    background:rgba(255,255,255,0.15);
+    white-space:nowrap;
+  }
+  .save-status.saving{color:var(--amarillo);}
+  .save-status.saved{color:#DFFFF0;}
+  .save-status.error{color:#FFD3D3;}
+  .btn{
+    border:none;
+    border-radius:8px;
+    padding:9px 14px;
+    font-size:13px;
+    font-weight:600;
+    cursor:pointer;
+    transition:transform .1s ease, box-shadow .15s ease;
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    white-space:nowrap;
+  }
+  .btn:active{transform:scale(0.96);}
+  .btn-amarillo{background:var(--amarillo);color:#3A2C00;}
+  .btn-blanco{background:#fff;color:var(--azul-oscuro);}
+  .btn-verde{background:var(--verde);color:#fff;}
+  .btn-rojo{background:var(--rojo);color:#fff;}
+  .btn-outline{background:transparent;border:1.5px solid #fff;color:#fff;}
+  .btn:hover{box-shadow:0 3px 10px rgba(0,0,0,0.18);}
+  .btn:disabled{opacity:0.5;cursor:not-allowed;}
+  .btn-mini{
+    border:none;
+    border-radius:6px;
+    padding:3px 6px;
+    font-size:11px;
+    cursor:pointer;
+    background:var(--azul-oscuro);
+    color:#fff;
+  }
+  .btn-mini:hover{background:var(--azul);}
+  .btn-mini.rojo{background:var(--rojo);}
+  .btn-mini.verde{background:var(--verde);}
+  .btn-mini:disabled{opacity:0.4;cursor:not-allowed;}
+
+  .tabs{
+    display:flex;
+    gap:8px;
+    padding:14px 24px 0 24px;
+  }
+  .tab-btn{
+    background:#fff;
+    border:1.5px solid var(--gris-borde);
+    border-bottom:none;
+    padding:10px 20px;
+    border-radius:10px 10px 0 0;
+    cursor:pointer;
+    font-weight:600;
+    font-size:14px;
+    color:var(--texto-suave);
+  }
+  .tab-btn.active{
+    background:var(--azul-oscuro);
+    color:#fff;
+    border-color:var(--azul-oscuro);
+  }
+
+  main{
+    padding:0 24px 40px 24px;
+  }
+
+  .panel{
+    background:#fff;
+    border-radius:0 12px 12px 12px;
+    padding:18px;
+    box-shadow:0 4px 16px rgba(0,0,0,0.06);
+    border:1px solid var(--gris-borde);
+  }
+  .panel-toolbar{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    flex-wrap:wrap;
+    gap:10px;
+    margin-bottom:14px;
+  }
+  .grupo-select-wrap{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    background:var(--gris-fondo);
+    border:1px solid var(--gris-borde);
+    border-radius:8px;
+    padding:6px 12px;
+  }
+  .grupo-select-wrap label{
+    font-size:12px;
+    font-weight:600;
+    color:var(--texto-suave);
+    white-space:nowrap;
+  }
+  .grupo-select{
+    padding:6px 10px;
+    border-radius:6px;
+    border:1.5px solid var(--gris-borde);
+    font-size:13px;
+    font-weight:700;
+    color:var(--azul-oscuro);
+    background:#fff;
+    cursor:pointer;
+  }
+  .search-box{
+    flex:1;
+    min-width:200px;
+    max-width:340px;
+    position:relative;
+  }
+  .search-box input{
+    width:100%;
+    padding:9px 12px 9px 32px;
+    border-radius:8px;
+    border:1.5px solid var(--gris-borde);
+    font-size:13px;
+  }
+  .search-box::before{
+    content:"🔍";
+    position:absolute;
+    left:10px;
+    top:8px;
+    font-size:13px;
+    opacity:0.6;
+  }
+  .rev-controls{
+    display:flex;
+    gap:10px;
+    align-items:center;
+    flex-wrap:wrap;
+  }
+  .max-rev-box{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    background:var(--gris-fondo);
+    border:1px solid var(--gris-borde);
+    border-radius:8px;
+    padding:6px 10px;
+    font-size:12px;
+    color:var(--texto-suave);
+  }
+  .max-rev-box input{
+    width:56px;
+    padding:4px 6px;
+    border-radius:6px;
+    border:1.5px solid var(--gris-borde);
+    font-size:12px;
+    text-align:center;
+  }
+
+  .table-wrap{
+    overflow-x:auto;
+    border-radius:10px;
+    border:1px solid var(--gris-borde);
+    -webkit-overflow-scrolling:touch;
+  }
+  table{
+    border-collapse:collapse;
+    width:max-content;
+    min-width:900px;
+    font-size:12.5px;
+  }
+  thead th{
+    background:var(--azul-oscuro);
+    color:#fff;
+    padding:8px 6px;
+    text-align:center;
+    position:sticky;
+    top:0;
+    z-index:2;
+    font-weight:600;
+  }
+  thead tr.sub-head th{
+    background:#2A8E95;
+    font-size:11px;
+    padding:5px;
+  }
+  th.sticky-col, td.sticky-col{
+    position:sticky;
+    left:0;
+    background:#fff;
+    z-index:1;
+    box-shadow:2px 0 4px rgba(0,0,0,0.05);
+  }
+  th.sticky-col2, td.sticky-col2{
+    position:sticky;
+    left:70px;
+    background:#fff;
+    z-index:1;
+    box-shadow:2px 0 4px rgba(0,0,0,0.05);
+  }
+  thead th.sticky-col, thead th.sticky-col2{
+    background:var(--azul-oscuro);
+    z-index:3;
+  }
+  tbody tr:nth-child(even) td:not(.sticky-col):not(.sticky-col2){background:#F8FBFB;}
+  tbody tr:nth-child(even) td.sticky-col, tbody tr:nth-child(even) td.sticky-col2{background:#F8FBFB;}
+  tbody tr:hover td{background:#EAF7F8;}
+  td{
+    padding:6px 5px;
+    text-align:center;
+    border-bottom:1px solid var(--gris-borde);
+    white-space:nowrap;
+    vertical-align:middle;
+  }
+  td.ot-cell{font-weight:800;color:var(--azul-oscuro);font-size:15px;}
+  td.permiso-cell{
+    font-size:13px;
+    font-weight:700;
+    color:var(--texto);
+    text-align:left;
+    white-space:nowrap;
+  }
+  td.doc-cell{
+    min-width:76px;
+  }
+  .doc-cell-wrap{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:3px;
+  }
+  .comment-input{
+    width:68px;
+    padding:3px 4px;
+    font-size:10px;
+    border-radius:5px;
+    border:1px solid var(--gris-borde);
+    text-align:center;
+    background:#FCFEFE;
+  }
+  .comment-input:focus{
+    outline:none;
+    border-color:var(--azul);
+  }
+  .comment-input::placeholder{color:#B9C6C8;}
+
+  td.lista-cell{
+    text-align:left;
+    max-width:220px;
+    white-space:normal;
+    font-weight:500;
+    font-size:11px;
+  }
+  td.lista-cell.listos-cell{color:var(--verde);}
+  td.lista-cell.faltantes-cell{color:var(--rojo);}
+  .lista-wrap{
+    display:flex;
+    align-items:flex-start;
+    gap:6px;
+  }
+  .lista-texto{flex:1;}
+  .btn-copiar{
+    flex-shrink:0;
+    border:none;
+    background:var(--gris-fondo);
+    border:1px solid var(--gris-borde);
+    border-radius:6px;
+    padding:3px 6px;
+    font-size:12px;
+    cursor:pointer;
+  }
+  .btn-copiar:hover{background:var(--azul);color:#fff;}
+  .btn-copiar.copiado{background:var(--verde);color:#fff;border-color:var(--verde);}
+
+  .chk{
+    width:26px;
+    height:26px;
+    border-radius:6px;
+    border:1.5px solid var(--gris-borde);
+    background:#fff;
+    cursor:pointer;
+    font-size:14px;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    user-select:none;
+    transition:all .12s ease;
+  }
+  .chk:hover{border-color:var(--azul);}
+  .chk.ok{background:var(--verde);border-color:var(--verde);color:#fff;}
+  .chk.bad{background:var(--rojo);border-color:var(--rojo);color:#fff;}
+
+  .rev-date{
+    width:118px;
+    padding:4px 5px;
+    border-radius:6px;
+    border:1.5px solid var(--gris-borde);
+    font-size:11px;
+  }
+  .rev-date:disabled{background:#F1F1F1;color:#aaa;}
+
+  .rev-cell-wrap{
+    display:flex;
+    gap:6px;
+    align-items:center;
+    justify-content:center;
+  }
+  .rev-cell-empty{
+    color:#C4CFD0;
+    font-size:11px;
+  }
+  .rev-actions-wrap{
+    display:flex;
+    gap:5px;
+    align-items:center;
+    justify-content:center;
+  }
+  .rev-count-badge{
+    font-size:10.5px;
+    color:var(--texto-suave);
+    min-width:34px;
+    text-align:center;
+  }
+
+  .stats-bar{
+    display:flex;
+    gap:14px;
+    margin-bottom:14px;
+    flex-wrap:wrap;
+  }
+  .stat-card{
+    background:var(--gris-fondo);
+    border:1px solid var(--gris-borde);
+    border-radius:10px;
+    padding:10px 16px;
+    min-width:120px;
+  }
+  .stat-card .num{font-size:20px;font-weight:800;color:var(--azul-oscuro);}
+  .stat-card .lbl{font-size:11px;color:var(--texto-suave);}
+
+  .loading-overlay{
+    position:fixed;
+    inset:0;
+    background:rgba(244,247,248,0.92);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    z-index:100;
+    font-size:15px;
+    font-weight:600;
+    color:var(--azul-oscuro);
+    flex-direction:column;
+    gap:10px;
+  }
+  .spinner{
+    width:34px;
+    height:34px;
+    border:4px solid var(--gris-borde);
+    border-top-color:var(--azul-oscuro);
+    border-radius:50%;
+    animation:spin 0.8s linear infinite;
+  }
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  footer{
+    text-align:center;
+    padding:14px;
+    font-size:11px;
+    color:var(--texto-suave);
+  }
+
+  /* Barra de scroll horizontal fija en la parte inferior de la pantalla,
+     sincronizada con la tabla activa. Su posición y ancho se ajustan por
+     JS para coincidir exactamente con el contenedor de la tabla visible,
+     así el recorrido de scroll siempre llega hasta el final. */
+  .bottom-scrollbar{
+    position:fixed;
+    left:0;
+    right:0;
+    bottom:0;
+    height:16px;
+    overflow-x:auto;
+    overflow-y:hidden;
+    background:#fff;
+    border-top:1.5px solid var(--gris-borde);
+    box-shadow:0 -2px 8px rgba(0,0,0,0.08);
+    z-index:60;
+    -webkit-overflow-scrolling:touch;
+  }
+  .bottom-scrollbar::-webkit-scrollbar{height:14px;}
+  .bottom-scrollbar::-webkit-scrollbar-track{background:var(--gris-fondo);}
+  .bottom-scrollbar::-webkit-scrollbar-thumb{background:var(--azul-oscuro);border-radius:7px;}
+  #bottomScrollbarInner{height:1px;}
+
+  @media (max-width:700px){
+    header{padding:14px 14px;}
+    header h1{font-size:17px;}
+    main{padding:0 8px 30px 8px;}
+    .tabs{padding:12px 8px 0 8px;}
+    table{font-size:11px;}
+    .chk{width:22px;height:22px;font-size:12px;}
+  }
+</style>
+</head>
+<body>
+
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="spinner"></div>
+  <div>Cargando datos desde Firebase...</div>
+</div>
+
+<header>
+  <h1>📋 Revisión Documental
+    <span>Control de expedientes por OT · D1–D22</span>
+  </h1>
+  <div class="header-actions">
+    <span class="save-status" id="saveStatus">✓ Sincronizado</span>
+    <button class="btn btn-amarillo" id="btnExportPNG">🖼 PNG</button>
+    <button class="btn btn-blanco" id="btnExportXLSX">📊 Excel</button>
+  </div>
+</header>
+
+<div class="tabs">
+  <button class="tab-btn active" data-tab="docs">📁 Documentos (D1–D22)</button>
+  <button class="tab-btn" data-tab="revs">✅ Revisiones</button>
+</div>
+
+<main>
+
+  <!-- ===================== PANEL DOCUMENTOS ===================== -->
+  <section class="panel" id="panel-docs">
+    <div class="stats-bar" id="statsDocs"></div>
+    <div class="panel-toolbar">
+      <div class="grupo-select-wrap">
+        <label for="grupoSelectDocs">Grupo:</label>
+        <select id="grupoSelectDocs" class="grupo-select"></select>
+      </div>
+      <div class="search-box">
+        <input type="text" id="searchDocs" placeholder="Buscar por OT o número de permiso...">
+      </div>
+      <div style="font-size:12px;color:var(--texto-suave);">
+        Click = ✅ &nbsp;·&nbsp; Doble click = ❌ &nbsp;·&nbsp; Al marcar aparece un campo para escribir un comentario
+      </div>
+    </div>
+    <div class="table-wrap" id="tableWrapDocs">
+      <table id="tableDocs">
+        <thead>
+          <tr>
+            <th class="sticky-col" rowspan="2" style="min-width:60px;">OT</th>
+            <th class="sticky-col2" rowspan="2" style="min-width:170px;">Permiso CRE/CNE</th>
+            <th id="docsHeadRange" colspan="22">Documentos</th>
+            <th rowspan="2" style="min-width:230px;">Listos</th>
+            <th rowspan="2" style="min-width:230px;">Faltantes</th>
+          </tr>
+          <tr class="sub-head" id="docsSubHead"></tr>
+        </thead>
+        <tbody id="docsBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ===================== PANEL REVISIONES ===================== -->
+  <section class="panel" id="panel-revs" style="display:none;">
+    <div class="panel-toolbar">
+      <div class="grupo-select-wrap">
+        <label for="grupoSelectRevs">Grupo:</label>
+        <select id="grupoSelectRevs" class="grupo-select"></select>
+      </div>
+      <div class="search-box">
+        <input type="text" id="searchRevs" placeholder="Buscar por OT o número de permiso...">
+      </div>
+      <div class="rev-controls">
+        <div class="max-rev-box">
+          <label for="maxRevInput">Máx. revisiones por OT:</label>
+          <input type="number" id="maxRevInput" min="1" max="50" value="5">
+        </div>
+      </div>
+    </div>
+    <div style="font-size:12px;color:var(--texto-suave);margin-bottom:10px;">
+      Cada OT tiene su propio número de revisiones. Usa los botones ➕ / ➖ de cada fila para agregar o quitar revisiones individuales. Al marcar el check, la fecha se llena automáticamente con el día de hoy.
+    </div>
+    <div class="table-wrap" id="tableWrapRevs">
+      <table id="tableRevs">
+        <thead>
+          <tr id="revsHeadRow">
+            <th class="sticky-col" style="min-width:60px;">OT</th>
+            <th class="sticky-col2" style="min-width:170px;">Permiso CRE/CNE</th>
+          </tr>
+        </thead>
+        <tbody id="revsBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+</main>
+
+<footer>Revisión Documental · datos sincronizados automáticamente con Firebase Firestore</footer>
+
+<!-- Barra de scroll horizontal fija (siempre visible, sincronizada con la tabla activa) -->
+<div class="bottom-scrollbar" id="bottomScrollbar">
+  <div id="bottomScrollbarInner"></div>
+</div>
+
+<script>
+/* =====================================================
+   CONFIGURACIÓN DE FIREBASE
+===================================================== */
+const firebaseConfig = {
+  apiKey: "AIzaSyAtZpRO-Gy59prAeKjpaAs_p-qqxuM9jMo",
+  authDomain: "quiniela-3c8fa.firebaseapp.com",
+  projectId: "quiniela-3c8fa",
+  storageBucket: "quiniela-3c8fa.firebasestorage.app",
+  messagingSenderId: "321094792504",
+  appId: "1:321094792504:web:532ba43015d1557a7cfdcd"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+// Documento aislado donde vive toda la información de esta app
+const docRef = db.collection('revisiones').doc('revision-documental-v1');
+
+/* =====================================================
+   DATOS INICIALES (catálogo de OT / permisos)
+===================================================== */
+const DATA_INICIAL = [
+  { ot: "61", permiso: "PL/8625/EXP/ES/2015" },
+  { ot: "62", permiso: "PL/23043/EXP/ES/2019" },
+  { ot: "63", permiso: "PL/472/EXP/ES/2015" },
+  { ot: "64", permiso: "PL/615/EXP/ES/2015" },
+  { ot: "65", permiso: "PL/537/EXP/ES/2015" },
+  { ot: "66", permiso: "PL/435/EXP/ES/2015" },
+  { ot: "67", permiso: "PL/431/EXP/ES/2015" },
+  { ot: "68", permiso: "PL/430/EXP/ES/2015" },
+  { ot: "69", permiso: "PL/484/EXP/ES/2015" },
+  { ot: "70", permiso: "PL/574/EXP/ES/2015" },
+  { ot: "71", permiso: "PL/598/EXP/ES/2015" },
+  { ot: "72", permiso: "PL/553/EXP/ES/2015" },
+  { ot: "73", permiso: "PL/499/EXP/ES/2015" },
+  { ot: "74", permiso: "PL/1278/EXP/ES/2015" },
+  { ot: "75", permiso: "PL/464/EXP/ES/2015" },
+  { ot: "76", permiso: "PL/5955/EXP/ES/2015" },
+  { ot: "77", permiso: "PL/445/EXP/ES/2015" },
+  { ot: "78", permiso: "PL/440/EXP/ES/2015" },
+  { ot: "79", permiso: "PL/439/EXP/ES/2015" },
+  { ot: "80", permiso: "PL/551/EXP/ES/2015" },
+  { ot: "81", permiso: "PL/613/EXP/ES/2015" },
+  { ot: "82", permiso: "PL/523/EXP/ES/2015" },
+  { ot: "83", permiso: "PL/21991/EXP/ES/2018" },
+  { ot: "84", permiso: "PL/25655/EXP/ES/2024" },
+  { ot: "85", permiso: "PL/581/EXP/ES/2015" },
+  { ot: "86", permiso: "PL/487/EXP/ES/2015" },
+  { ot: "87", permiso: "PL/621/EXP/ES/2015" },
+  { ot: "88", permiso: "PL/449/EXP/ES/2015" },
+  { ot: "89", permiso: "PL/603/EXP/ES/2015" },
+  { ot: "90", permiso: "PL/19022/EXP/ES/2016" },
+  { ot: "91", permiso: "PL/437/EXP/ES/2015" },
+  { ot: "92", permiso: "PL/463/EXP/ES/2015" },
+  { ot: "93", permiso: "PL/538/EXP/ES/2015" },
+  { ot: "94", permiso: "PL/474/EXP/ES/2015" },
+  { ot: "95", permiso: "PL/578/EXP/ES/2015" },
+  { ot: "96", permiso: "PL/586/EXP/ES/2015" },
+  { ot: "97", permiso: "PL/4527/EXP/ES/2015" },
+  { ot: "98", permiso: "PL/599/EXP/ES/2015" },
+  { ot: "99", permiso: "PL/3812/EXP/ES/2015" },
+  { ot: "100", permiso: "PL/3811/EXP/ES/2015" },
+  { ot: "101", permiso: "PL/517/EXP/ES/2015" },
+  { ot: "102", permiso: "PL/4528/EXP/ES/2015" },
+  { ot: "103", permiso: "PL/561/EXP/ES/2015" },
+  { ot: "104", permiso: "PL/11414/EXP/ES/2015" },
+  { ot: "105", permiso: "PL/558/EXP/ES/2015" },
+  { ot: "106", permiso: "PL/466/EXP/ES/2015" },
+  { ot: "107", permiso: "PL/515/EXP/ES/2015" },
+  { ot: "108", permiso: "PL/492/EXP/ES/2015" },
+  { ot: "109", permiso: "PL/458/EXP/ES/2015" },
+  { ot: "110", permiso: "PL/594/EXP/ES/2015" },
+  { ot: "111", permiso: "PL/24373/EXP/ES/2022" },
+  { ot: "112", permiso: "PL/573/EXP/ES/2015" },
+  { ot: "113", permiso: "PL/489/EXP/ES/2015" },
+  { ot: "114", permiso: "PL/428/EXP/ES/2015" },
+  { ot: "115", permiso: "PL/451/EXP/ES/2015" },
+  { ot: "116", permiso: "PL/461/EXP/ES/2015" },
+  { ot: "117", permiso: "PL/481/EXP/ES/2015" },
+  { ot: "118", permiso: "PL/486/EXP/ES/2015" },
+  { ot: "119", permiso: "PL/1282/EXP/ES/2015" },
+  { ot: "120", permiso: "PL/566/EXP/ES/2015" },
+  { ot: "121", permiso: "PL/579/EXP/ES/2015" },
+  { ot: "122", permiso: "PL/494/EXP/ES/2015" },
+  { ot: "123", permiso: "PL/555/EXP/ES/2015" },
+  { ot: "124", permiso: "PL/609/EXP/ES/2015" },
+  { ot: "125", permiso: "PL/570/EXP/ES/2015" },
+  { ot: "126", permiso: "PL/526/EXP/ES/2015" },
+  { ot: "127", permiso: "PL/441/EXP/ES/2015" },
+  { ot: "128", permiso: "PL/433/EXP/ES/2015" },
+  { ot: "129", permiso: "PL/521/EXP/ES/2015" },
+  { ot: "130", permiso: "PL/571/EXP/ES/2015" },
+  { ot: "131", permiso: "PL/20776/EXP/ES/2017" },
+  { ot: "132", permiso: "PL/596/EXP/ES/2015" },
+  { ot: "133", permiso: "PL/567/EXP/ES/2015" },
+  { ot: "134", permiso: "PL/600/EXP/ES/2015" },
+  { ot: "135", permiso: "PL/563/EXP/ES/2015" },
+  { ot: "136", permiso: "PL/1289/EXP/ES/2015" },
+  { ot: "137", permiso: "PL/541/EXP/ES/2015" },
+  { ot: "138", permiso: "PL/548/EXP/ES/2015" },
+  { ot: "139", permiso: "PL/1280/EXP/ES/2015" },
+  { ot: "140", permiso: "PL/496/EXP/ES/2015" },
+  { ot: "141", permiso: "PL/25892/EXP/ES/2024" },
+  { ot: "142", permiso: "PL/438/EXP/ES/2015" },
+  { ot: "143", permiso: "PL/527/EXP/ES/2015" },
+  { ot: "144", permiso: "PL/620/EXP/ES/2015" },
+  { ot: "145", permiso: "PL/24310/EXP/ES/2022" },
+  { ot: "146", permiso: "PL/485/EXP/ES/2015" },
+  { ot: "147", permiso: "PL/741/EXP/ES/2015" },
+  { ot: "148", permiso: "PL/519/EXP/ES/2015" },
+  { ot: "149", permiso: "PL/488/EXP/ES/2015" },
+  { ot: "150", permiso: "PL/6779/EXP/ES/2015" },
+  { ot: "151", permiso: "PL/6781/EXP/ES/2015" },
+  { ot: "152", permiso: "PL/619/EXP/ES/2015" },
+  { ot: "153", permiso: "PL/646/EXP/ES/2015" },
+  { ot: "154", permiso: "PL/446/EXP/ES/2015" },
+  { ot: "155", permiso: "PL/456/EXP/ES/2015" },
+  { ot: "156", permiso: "PL/607/EXP/ES/2015" },
+  { ot: "157", permiso: "PL/467/EXP/ES/2015" },
+  { ot: "158", permiso: "PL/592/EXP/ES/2015" },
+  { ot: "159", permiso: "PL/511/EXP/ES/2015" },
+  { ot: "160", permiso: "PL/557/EXP/ES/2015" },
+  { ot: "161", permiso: "PL/611/EXP/ES/2015" },
+  { ot: "162", permiso: "PL/580/EXP/ES/2015" },
+  { ot: "163", permiso: "PL/475/EXP/ES/2015" },
+  { ot: "164", permiso: "PL/591/EXP/ES/2015" },
+  { ot: "165", permiso: "PL/468/EXP/ES/2015" },
+  { ot: "166", permiso: "PL/585/EXP/ES/2015" },
+  { ot: "167", permiso: "PL/614/EXP/ES/2015" },
+  { ot: "168", permiso: "PL/7531/EXP/ES/2015" },
+  { ot: "169", permiso: "PL/539/EXP/ES/2015" },
+  { ot: "170", permiso: "PL/443/EXP/ES/2015" },
+  { ot: "171", permiso: "PL/442/EXP/ES/2015" },
+  { ot: "172", permiso: "PL/576/EXP/ES/2015" },
+  { ot: "173", permiso: "PL/483/EXP/ES/2015" },
+  { ot: "174", permiso: "PL/552/EXP/ES/2015" },
+  { ot: "175", permiso: "PL/522/EXP/ES/2015" },
+  { ot: "176", permiso: "PL/593/EXP/ES/2015" },
+  { ot: "177", permiso: "PL/429/EXP/ES/2015" },
+  { ot: "178", permiso: "PL/568/EXP/ES/2015" },
+  { ot: "179", permiso: "PL/457/EXP/ES/2015" },
+  { ot: "180", permiso: "PL/1287/EXP/ES/2015" },
+  { ot: "181", permiso: "PL/18905/EXP/ES/2016" },
+  { ot: "182", permiso: "PL/493/EXP/ES/2015" },
+  { ot: "183", permiso: "PL/550/EXP/ES/2015" },
+  { ot: "184", permiso: "PL/610/EXP/ES/2015" },
+  { ot: "185", permiso: "PL/479/EXP/ES/2015" },
+  { ot: "186", permiso: "PL/6831/EXP/ES/2015" },
+  { ot: "187", permiso: "PL/453/EXP/ES/2015" },
+  { ot: "188", permiso: "PL/460/EXP/ES/2015" },
+  { ot: "189", permiso: "PL/1283/EXP/ES/2015" },
+  { ot: "190", permiso: "PL/542/EXP/ES/2015" },
+  { ot: "191", permiso: "PL25780/EXP/ES/2024" },
+  { ot: "192", permiso: "PL/454/EXP/ES/2015" },
+  { ot: "193", permiso: "PL/556/EXP/ES/2015" },
+  { ot: "194", permiso: "PL/18945/EXP/ES/2016" },
+  { ot: "195", permiso: "PL/477/EXP/ES/2015" },
+  { ot: "196", permiso: "PL/575/EXP/ES/2015" },
+  { ot: "197", permiso: "PL/491/EXP/ES/2015" },
+  { ot: "198", permiso: "PL/583/EXP/ES/2015" },
+  { ot: "199", permiso: "PL/623/EXP/ES/2015" },
+  { ot: "200", permiso: "PL/9005/EXP/ES/2016" },
+  { ot: "201", permiso: "PL/19682/EXP/ES/2016" },
+  { ot: "202", permiso: "PL/512/EXP/ES/2015" },
+  { ot: "203", permiso: "PL/518/EXP/ES/2015" },
+  { ot: "204", permiso: "PL/24501/EXP/ES/2022" },
+  { ot: "205", permiso: "PL/20009/EXP/ES/2017" },
+  { ot: "206", permiso: "PL/546/EXP/ES/2015" },
+  { ot: "207", permiso: "PL/23695/EXP/ES/2020" },
+  { ot: "208", permiso: "PL/23681/EXP/ES/2020" },
+  { ot: "209", permiso: "PL/9496/EXP/ES/2015" },
+  { ot: "210", permiso: "PL/549/EXP/ES/2015" },
+  { ot: "211", permiso: "PL/452/EXP/ES/2015" },
+  { ot: "212", permiso: "PL/23696/EXP/ES/2020" },
+  { ot: "213", permiso: "PL/13716/EXP/ES/2016" },
+  { ot: "214", permiso: "PL/11951/EXP/ES/2015" },
+  { ot: "215", permiso: "PL/10548/EXP/ES/2015" },
+  { ot: "216", permiso: "PL/465/EXP/ES/2015" },
+  { ot: "217", permiso: "PL/2297/EXP/ES/2015" },
+  { ot: "218", permiso: "PL/24371/EXP/ES/2022" },
+  { ot: "219", permiso: "PL/1281/EXP/ES/2015" },
+  { ot: "220", permiso: "PL/597/EXP/ES/2015" },
+  { ot: "221", permiso: "PL/13583/EXP/ES/2016" },
+  { ot: "222", permiso: "PL/589/EXP/ES/2015" },
+  { ot: "223", permiso: "PL/547/EXP/ES/2015" },
+  { ot: "224", permiso: "PL/1284/EXP/ES/2015" },
+  { ot: "225", permiso: "PL/482/EXP/ES/2015" },
+  { ot: "226", permiso: "PL/426/EXP/ES/2015" },
+  { ot: "227", permiso: "PL/6545/EXP/ES/2015" },
+  { ot: "228", permiso: "PL/1290/EXP/ES/2015" },
+  { ot: "229", permiso: "PL/12595/EXP/ES/2015" },
+  { ot: "230", permiso: "PL/520/EXP/ES/2015" },
+  { ot: "231", permiso: "PL/588/EXP/ES/2015" },
+  { ot: "232", permiso: "PL/514/EXP/ES/2015" },
+  { ot: "233", permiso: "PL/455/EXP/ES/2015" },
+  { ot: "234", permiso: "PL/24348/EXP/ES/2022" },
+  { ot: "235", permiso: "PL/22869/EXP/ES/2019" },
+  { ot: "236", permiso: "PL/24375/EXP/ES/2022" },
+  { ot: "237", permiso: "PL/24738/EXP/ES/2022" },
+  { ot: "238", permiso: "PL/595/EXP/ES/2015" },
+  { ot: "239", permiso: "PL/516/EXP/ES/2015" },
+  { ot: "240", permiso: "PL/1285/EXP/ES/2015" },
+  { ot: "241", permiso: "PL/587/EXP/ES/2015" },
+  { ot: "242", permiso: "PL/447/EXP/ES/2015" },
+  { ot: "243", permiso: "PL/473/EXP/ES/2015" },
+  { ot: "244", permiso: "PL/21791/EXP/ES/2018" },
+  { ot: "245", permiso: "PL/4547/EXP/ES/2015" },
+  { ot: "246", permiso: "PL/13580/EXP/ES/2016" },
+  { ot: "247", permiso: "PL/450/EXP/ES/2015" },
+  { ot: "248", permiso: "PL/4466/EXP/ES/2015" },
+  { ot: "249", permiso: "PL/560/EXP/ES/2015" },
+  { ot: "250", permiso: "PL/602/EXP/ES/2015" },
+  { ot: "251", permiso: "PL/1279/EXP/ES/2015" },
+  { ot: "252", permiso: "PL/425/EXP/ES/2015" },
+  { ot: "253", permiso: "PL/564/EXP/ES/2015" },
+  { ot: "254", permiso: "PL/569/EXP/ES/2015" },
+  { ot: "255", permiso: "PL/469/EXP/ES/2015" },
+  { ot: "256", permiso: "PL/24312/EXP/ES/2022" },
+  { ot: "257", permiso: "PL/24304/EXP/ES/2022" },
+  { ot: "258", permiso: "PL/24302/EXP/ES/2022" },
+  { ot: "259", permiso: "PL/4573/EXP/ES/2015" },
+  { ot: "260", permiso: "PL/5819/EXP/ES/2015" },
+  { ot: "261", permiso: "PL/624/EXP/ES/2015" },
+  { ot: "262", permiso: "PL/606/EXP/ES/2015" },
+  { ot: "263", permiso: "PL/427/EXP/ES/2015" },
+  { ot: "264", permiso: "PL/544/EXP/ES/2015" },
+  { ot: "265", permiso: "PL/4530/EXP/ES/2015" },
+  { ot: "266", permiso: "PL/5861/EXP/ES/2015" },
+  { ot: "267", permiso: "PL/12593/EXP/ES/2015" },
+  { ot: "268", permiso: "PL/444/EXP/ES/2015" },
+  { ot: "269", permiso: "PL/608/EXP/ES/2015" },
+  { ot: "270", permiso: "PL/432/EXP/ES/2015" },
+  { ot: "271", permiso: "PL/13582/EXP/ES/2016" },
+  { ot: "272", permiso: "PL/590/EXP/ES/2015" },
+  { ot: "273", permiso: "PL/513/EXP/ES/2015" },
+  { ot: "274", permiso: "PL/448/EXP/ES/2015" },
+  { ot: "275", permiso: "PL/1917/EXP/ES/2015" },
+  { ot: "276", permiso: "PL/13579/EXP/ES/2016" },
+  { ot: "277", permiso: "PL/25493/EXP/ES/2024" },
+  { ot: "278", permiso: "PL/814/EXP/ES/2015" },
+  { ot: "279", permiso: "PL/436/EXP/ES/2015" },
+  { ot: "280", permiso: "PL/434/EXP/ES/2015" },
+  { ot: "281", permiso: "PL/13581/EXP/ES/2016" },
+  { ot: "282", permiso: "PL/752/EXP/ES/2015" },
+  { ot: "283", permiso: "PL/771/EXP/ES/2015" },
+  { ot: "284", permiso: "PL/476/EXP/ES/2015" },
+  { ot: "285", permiso: "PL/604/EXP/ES/2015" },
+  { ot: "286", permiso: "PL/559/EXP/ES/2015" },
+  { ot: "287", permiso: "PL/740/EXP/ES/2015" },
+  { ot: "288", permiso: "PL/530/EXP/ES/2015" },
+  { ot: "289", permiso: "PL/612/EXP/ES/2015" },
+  { ot: "290", permiso: "PL/459/EXP/ES/2015" },
+  { ot: "291", permiso: "PL/764/EXP/ES/2015" },
+  { ot: "292", permiso: "PL/525/EXP/ES/2015" },
+  { ot: "293", permiso: "PL/23251/EXP/ES/2020" },
+  { ot: "294", permiso: "PL/577/EXP/ES/2015" },
+  { ot: "295", permiso: "PL/529/EXP/ES/2015" },
+  { ot: "296", permiso: "PL/1288/EXP/ES/2015" },
+  { ot: "297", permiso: "PL/10546/EXP/ES/2015" },
+  { ot: "298", permiso: "PL/9439/EXP/ES/2015" },
+  { ot: "299", permiso: "PL/565/EXP/ES/2015" },
+  { ot: "300", permiso: "PL/10547/EXP/ES/2015" },
+  { ot: "301", permiso: "PL/470/EXP/ES/2015" },
+  { ot: "302", permiso: "PL/9442/EXP/ES/2015" },
+  { ot: "303", permiso: "PL/3002/EXP/ES/2015" },
+  { ot: "304", permiso: "PL/471/EXP/ES/2015" },
+  { ot: "305", permiso: "PL/528/EXP/ES/2015" },
+  { ot: "306", permiso: "PL/23042/EXP/ES/2019" },
+  { ot: "307", permiso: "PL/622/EXP/ES/2015" },
+  { ot: "308", permiso: "PL/543/EXP/ES/2015" },
+  { ot: "309", permiso: "PL/20330/EXP/ES/2017" },
+  { ot: "310", permiso: "PL/21020/EXP/ES/2018" },
+  { ot: "311", permiso: "PL/572/EXP/ES/2015" },
+  { ot: "312", permiso: "PL/1722/EXP/ES/2015" },
+  { ot: "313", permiso: "PL/10549/EXP/ES/2015" },
+  { ot: "314", permiso: "PL/1661/EXP/ES/2015" },
+  { ot: "315", permiso: "PL/7862/EXP/ES/2015" },
+  { ot: "316", permiso: "PL/19903/EXP/ES/2017" },
+  { ot: "317", permiso: "PL/10767/EXP/ES/2015" },
+  { ot: "318", permiso: "PL/1672/EXP/ES/2015" },
+  { ot: "319", permiso: "PL/490/EXP/ES/2015" },
+  { ot: "320", permiso: "PL/524/EXP/ES/2015" },
+  { ot: "321", permiso: "PL/1286/EXP/ES/2015" },
+  { ot: "322", permiso: "PL/4937/EXP/ES/2015" },
+  { ot: "323", permiso: "PL/480/EXP/ES/2015" },
+  { ot: "324", permiso: "PL/478/EXP/ES/2015" },
+  { ot: "325", permiso: "PL/19325/EXP/ES/2016" },
+  { ot: "326", permiso: "PL/1291/EXP/ES/2015" },
+  { ot: "327", permiso: "PL/584/EXP/ES/2015" },
+  { ot: "328", permiso: "PL/22066/EXP/ES/2019" },
+  { ot: "329", permiso: "PL/601/EXP/ES/2015" },
+  { ot: "330", permiso: "PL/25591/EXP/ES/2024" },
+  { ot: "331", permiso: "PL/2607/EXP/ES/2015" },
+  { ot: "332", permiso: "PL/5818/EXP/ES/2015" },
+  { ot: "333", permiso: "PL/545/EXP/ES/2015" },
+  { ot: "334", permiso: "PL/605/EXP/ES/2015" },
+  { ot: "335", permiso: "CNE/PL/577/EXP/ES/2025" },
+  { ot: "336", permiso: "CNE/PL/584/EXP/ES/2025" },
+  { ot: "337", permiso: "CNE/PL/582/EXP/ES/2025" },
+  { ot: "338", permiso: "CNE/PL/585/EXP/ES/2025" },
+  { ot: "339", permiso: "CNE/PL/556/EXP/ES/2025" },
+  { ot: "340", permiso: "PL/1964/EXP/ES/2015" },
+  { ot: "341", permiso: "PL/3371/EXP/ES/2015" },
+  { ot: "342", permiso: "PL/19249/DIS/OM/2016" }
+];
+
+// Catálogo de grupos disponibles. Preparado para agregar más grupos en
+// el futuro: 1) agrega el nombre a GRUPOS, 2) en los nuevos objetos de
+// OT que agregues a DATA_INICIAL, define item.grupo = "NOMBRE_GRUPO".
+const GRUPOS = ["PETROMAX"];
+
+// Todas las OT del catálogo actual pertenecen al grupo "PETROMAX" por
+// defecto, si no se especifica otro grupo explícitamente en el objeto.
+DATA_INICIAL.forEach(item=>{
+  if(!item.grupo) item.grupo = "PETROMAX";
+});
+
+const NUM_DOCS = 22;
+const DEFAULT_MAX_REVISIONES = 5;
+
+let state = null;
+let grupoActual = GRUPOS[0];
+
+/* =====================================================
+   ESTADO: creación / fusión / persistencia (Firebase)
+===================================================== */
+
+// Crea el estado base (vacío) a partir del catálogo de OT.
+function estadoVacio(){
+  const docs = {};
+  const revs = {};
+  DATA_INICIAL.forEach(item=>{
+    // Cada documento ahora guarda estado (ok/bad/null) + comentario
+    docs[item.ot] = Array.from({length:NUM_DOCS}, ()=>({ estado: null, comentario: '' }));
+    // Cada OT arranca con exactamente 1 revisión
+    revs[item.ot] = [ { checked:false, fecha:'' } ];
+  });
+  return {
+    items: DATA_INICIAL,
+    docs,
+    revs,
+    maxRevisiones: DEFAULT_MAX_REVISIONES
+  };
+}
+
+// Fusiona los datos remotos de Firestore con la estructura esperada,
+// garantizando que las OT nuevas del catálogo también existan.
+function fusionarEstado(remoto){
+  const base = estadoVacio();
+  if(!remoto || typeof remoto !== 'object'){
+    return base;
+  }
+
+  const resultado = {
+    items: base.items,
+    docs: {},
+    revs: {},
+    maxRevisiones: (typeof remoto.maxRevisiones === 'number' && remoto.maxRevisiones >= 1)
+      ? remoto.maxRevisiones
+      : DEFAULT_MAX_REVISIONES
+  };
+
+  DATA_INICIAL.forEach(item=>{
+    // Documentos
+    const docsRemotos = remoto.docs && remoto.docs[item.ot];
+    if(Array.isArray(docsRemotos) && docsRemotos.length){
+      const arr = [];
+      for(let i=0;i<NUM_DOCS;i++){
+        const d = docsRemotos[i];
+        if(d && typeof d === 'object'){
+          arr.push({ estado: d.estado || null, comentario: d.comentario || '' });
+        }else{
+          arr.push({ estado:null, comentario:'' });
+        }
+      }
+      resultado.docs[item.ot] = arr;
+    }else{
+      resultado.docs[item.ot] = base.docs[item.ot];
+    }
+
+    // Revisiones (longitud individual por OT)
+    const revsRemotas = remoto.revs && remoto.revs[item.ot];
+    if(Array.isArray(revsRemotas) && revsRemotas.length){
+      resultado.revs[item.ot] = revsRemotas.map(r=>({
+        checked: !!(r && r.checked),
+        fecha: (r && r.fecha) || ''
+      }));
+    }else{
+      resultado.revs[item.ot] = base.revs[item.ot];
+    }
+  });
+
+  return resultado;
+}
+
+// Guardado con "debounce" para no saturar Firestore mientras se escribe.
+let saveTimer = null;
+function guardarEstado(inmediato){
+  const statusEl = document.getElementById('saveStatus');
+  if(statusEl){
+    statusEl.textContent = '⏳ Guardando...';
+    statusEl.className = 'save-status saving';
+  }
+
+  const ejecutarGuardado = ()=>{
+    docRef.set(state)
+      .then(()=>{
+        if(statusEl){
+          statusEl.textContent = '✓ Sincronizado';
+          statusEl.className = 'save-status saved';
+        }
+      })
+      .catch(err=>{
+        console.error('Error guardando en Firebase:', err);
+        if(statusEl){
+          statusEl.textContent = '⚠ Error al guardar';
+          statusEl.className = 'save-status error';
+        }
+      });
+  };
+
+  if(saveTimer) clearTimeout(saveTimer);
+  if(inmediato){
+    ejecutarGuardado();
+  }else{
+    saveTimer = setTimeout(ejecutarGuardado, 700);
+  }
+}
+
+// Carga inicial desde Firestore.
+async function cargarEstado(){
+  const overlay = document.getElementById('loadingOverlay');
+  try{
+    const snap = await docRef.get();
+    if(snap.exists){
+      state = fusionarEstado(snap.data());
+    }else{
+      state = estadoVacio();
+      await docRef.set(state); // primera vez: crea el documento en Firestore
+    }
+  }catch(err){
+    console.error('Error cargando desde Firebase:', err);
+    state = estadoVacio();
+  }
+  if(overlay) overlay.style.display = 'none';
+}
+
+/* =====================================================
+   UTILIDADES DE FORMATO (Listos / Faltantes / Copiado)
+===================================================== */
+
+// Devuelve { listos:[{d,comentario}], faltantes:[{d,comentario}] } para una OT.
+function calcListosFaltantes(ot){
+  const arr = state.docs[ot];
+  const listos = [];
+  const faltantes = [];
+  arr.forEach((v,idx)=>{
+    const d = 'D'+(idx+1);
+    if(v.estado==='ok') listos.push({ d, comentario:(v.comentario||'').trim() });
+    else if(v.estado==='bad') faltantes.push({ d, comentario:(v.comentario||'').trim() });
+  });
+  return { listos, faltantes };
+}
+
+// Texto que se muestra en la celda de la tabla: "D3 - comentario aquí"
+function formatoCelda(items){
+  if(!items.length) return '—';
+  return items.map(it => it.comentario ? `${it.d} - ${it.comentario}` : it.d).join(', ');
+}
+
+// Texto que se copia al portapapeles, con el formato solicitado por el usuario.
+function formatoCopiado(prefijo, items){
+  if(!items.length) return `${prefijo}: —`;
+  const partes = items.map(it => it.comentario ? `${it.d} (${it.comentario})` : it.d);
+  return `${prefijo}: ${partes.join(', ')}`;
+}
+
+// Copia texto al portapapeles con respaldo por si el navegador bloquea la API.
+function copiarTexto(texto, btnEl){
+  const marcarCopiado = ()=>{
+    if(!btnEl) return;
+    const original = btnEl.textContent;
+    btnEl.textContent = '✓';
+    btnEl.classList.add('copiado');
+    setTimeout(()=>{
+      btnEl.textContent = original;
+      btnEl.classList.remove('copiado');
+    }, 1200);
+  };
+
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(texto).then(marcarCopiado).catch(()=>{
+      copiarTextoFallback(texto);
+      marcarCopiado();
+    });
+  }else{
+    copiarTextoFallback(texto);
+    marcarCopiado();
+  }
+}
+
+function copiarTextoFallback(texto){
+  const ta = document.createElement('textarea');
+  ta.value = texto;
+  ta.style.position = 'fixed';
+  ta.style.opacity = '0';
+  document.body.appendChild(ta);
+  ta.select();
+  try{ document.execCommand('copy'); }catch(e){ /* silencioso */ }
+  document.body.removeChild(ta);
+}
+
+/* =====================================================
+   BARRA DE SCROLL HORIZONTAL FIJA (sincronizada)
+===================================================== */
+
+// Devuelve el contenedor con scroll de la tabla que está visible actualmente.
+function getActiveTableWrap(){
+  const activeBtn = document.querySelector('.tab-btn.active');
+  const tab = activeBtn ? activeBtn.dataset.tab : 'docs';
+  return tab==='docs' ? document.getElementById('tableWrapDocs') : document.getElementById('tableWrapRevs');
+}
+
+let sincronizandoScroll = false;
+
+// Ajusta posición, ancho y contenido de la barra fija según la tabla
+// visible, y sincroniza su desplazamiento. La barra se alinea EXACTAMENTE
+// con el ancho visible del contenedor de la tabla (en vez de usar todo
+// el ancho de la ventana), para que su recorrido de scroll coincida 1:1
+// con el de la tabla y siempre se pueda llegar hasta el final (columna
+// "Faltantes" incluida).
+function actualizarBottomScrollbar(){
+  requestAnimationFrame(()=>{
+    const wrap = getActiveTableWrap();
+    const bar = document.getElementById('bottomScrollbar');
+    const inner = document.getElementById('bottomScrollbarInner');
+    if(!wrap || !bar || !inner) return;
+    const table = wrap.querySelector('table');
+    if(!table) return;
+
+    const rect = wrap.getBoundingClientRect();
+    bar.style.left = rect.left + 'px';
+    bar.style.width = rect.width + 'px';
+
+    const anchoReal = table.scrollWidth;
+    inner.style.width = anchoReal + 'px';
+    bar.style.display = (anchoReal > rect.width + 1) ? 'block' : 'none';
+
+    sincronizandoScroll = true;
+    bar.scrollLeft = wrap.scrollLeft;
+    sincronizandoScroll = false;
+  });
+}
+
+// Enlaza los eventos de scroll entre la barra fija y las tablas.
+function initScrollSync(){
+  const bar = document.getElementById('bottomScrollbar');
+  const wrapDocs = document.getElementById('tableWrapDocs');
+  const wrapRevs = document.getElementById('tableWrapRevs');
+
+  bar.addEventListener('scroll', ()=>{
+    if(sincronizandoScroll) return;
+    const wrap = getActiveTableWrap();
+    if(!wrap) return;
+    sincronizandoScroll = true;
+    wrap.scrollLeft = bar.scrollLeft;
+    sincronizandoScroll = false;
+  });
+
+  [wrapDocs, wrapRevs].forEach(wrap=>{
+    if(!wrap) return;
+    wrap.addEventListener('scroll', ()=>{
+      if(sincronizandoScroll) return;
+      if(wrap !== getActiveTableWrap()) return;
+      sincronizandoScroll = true;
+      bar.scrollLeft = wrap.scrollLeft;
+      sincronizandoScroll = false;
+    });
+  });
+
+  window.addEventListener('resize', actualizarBottomScrollbar);
+  window.addEventListener('orientationchange', actualizarBottomScrollbar);
+  window.addEventListener('load', actualizarBottomScrollbar);
+}
+
+/* =====================================================
+   RENDER: SELECTOR DE GRUPO
+===================================================== */
+function poblarSelectGrupos(){
+  const selects = [document.getElementById('grupoSelectDocs'), document.getElementById('grupoSelectRevs')];
+  selects.forEach(sel=>{
+    if(!sel) return;
+    sel.innerHTML = '';
+    GRUPOS.forEach(g=>{
+      const opt = document.createElement('option');
+      opt.value = g;
+      opt.textContent = g;
+      sel.appendChild(opt);
+    });
+    sel.value = grupoActual;
+  });
+}
+
+function cambiarGrupo(nuevoGrupo){
+  grupoActual = nuevoGrupo;
+  const selDocs = document.getElementById('grupoSelectDocs');
+  const selRevs = document.getElementById('grupoSelectRevs');
+  if(selDocs) selDocs.value = grupoActual;
+  if(selRevs) selRevs.value = grupoActual;
+
+  renderDocsBody(document.getElementById('searchDocs').value);
+  renderStats();
+  renderRevsHead();
+  renderRevsBody(document.getElementById('searchRevs').value);
+}
+
+/* =====================================================
+   RENDER: TABLERO DE DOCUMENTOS
+===================================================== */
+function renderDocsHead(){
+  const sub = document.getElementById('docsSubHead');
+  sub.innerHTML = '';
+  for(let i=1;i<=NUM_DOCS;i++){
+    const th = document.createElement('th');
+    th.textContent = 'D'+i;
+    sub.appendChild(th);
+  }
+}
+
+// Actualiza solo las celdas de Listos/Faltantes de una fila (evita perder el foco del input).
+function actualizarListosFaltantesFila(ot){
+  const { listos, faltantes } = calcListosFaltantes(ot);
+
+  const listosTexto = document.getElementById('txt-listos-'+ot);
+  const faltantesTexto = document.getElementById('txt-faltantes-'+ot);
+  if(listosTexto) listosTexto.textContent = formatoCelda(listos);
+  if(faltantesTexto) faltantesTexto.textContent = formatoCelda(faltantes);
+
+  const btnListos = document.getElementById('btn-copy-listos-'+ot);
+  const btnFaltantes = document.getElementById('btn-copy-faltantes-'+ot);
+  if(btnListos) btnListos.dataset.texto = formatoCopiado('Documentos registrados', listos);
+  if(btnFaltantes) btnFaltantes.dataset.texto = formatoCopiado('Documentos faltantes', faltantes);
+}
+
+function renderDocsBody(filter){
+  const body = document.getElementById('docsBody');
+  body.innerHTML = '';
+  const f = (filter||'').trim().toLowerCase();
+
+  state.items.forEach(item=>{
+    if(item.grupo !== grupoActual) return;
+    if(f && !(item.ot.toLowerCase().includes(f) || item.permiso.toLowerCase().includes(f))) return;
+
+    const tr = document.createElement('tr');
+
+    const tdOt = document.createElement('td');
+    tdOt.className = 'sticky-col ot-cell';
+    tdOt.textContent = item.ot;
+    tr.appendChild(tdOt);
+
+    const tdPermiso = document.createElement('td');
+    tdPermiso.className = 'sticky-col2 permiso-cell';
+    tdPermiso.textContent = item.permiso;
+    tr.appendChild(tdPermiso);
+
+    for(let i=0;i<NUM_DOCS;i++){
+      const td = document.createElement('td');
+      td.className = 'doc-cell';
+
+      const wrap = document.createElement('div');
+      wrap.className = 'doc-cell-wrap';
+
+      const btn = document.createElement('button');
+      btn.className = 'chk';
+      const docData = state.docs[item.ot][i];
+      if(docData.estado==='ok'){ btn.classList.add('ok'); btn.textContent='✅'; }
+      else if(docData.estado==='bad'){ btn.classList.add('bad'); btn.textContent='❌'; }
+      else { btn.textContent=''; }
+
+      let clickTimer = null;
+      btn.addEventListener('click', ()=>{
+        if(clickTimer){
+          clearTimeout(clickTimer);
+          clickTimer = null;
+          // doble click -> tache
+          docData.estado = (docData.estado==='bad') ? null : 'bad';
+          guardarEstado();
+          renderDocsBody(document.getElementById('searchDocs').value);
+          renderStats();
+        } else {
+          clickTimer = setTimeout(()=>{
+            // click simple -> palomita
+            docData.estado = (docData.estado==='ok') ? null : 'ok';
+            guardarEstado();
+            renderDocsBody(document.getElementById('searchDocs').value);
+            renderStats();
+            clickTimer = null;
+          }, 230);
+        }
+      });
+
+      wrap.appendChild(btn);
+
+      // El campo de comentario solo aparece cuando el documento ya fue marcado
+      // (✅ o ❌). En celdas sin marcar no se muestra ningún campo.
+      if(docData.estado === 'ok' || docData.estado === 'bad'){
+        const comentarioInput = document.createElement('input');
+        comentarioInput.type = 'text';
+        comentarioInput.className = 'comment-input';
+        comentarioInput.placeholder = 'comentario';
+        comentarioInput.value = docData.comentario || '';
+        comentarioInput.addEventListener('input', ()=>{
+          docData.comentario = comentarioInput.value;
+          guardarEstado();
+          actualizarListosFaltantesFila(item.ot);
+        });
+        wrap.appendChild(comentarioInput);
+      }
+
+      td.appendChild(wrap);
+      tr.appendChild(td);
+    }
+
+    const { listos, faltantes } = calcListosFaltantes(item.ot);
+
+    // Celda Listos
+    const tdListos = document.createElement('td');
+    tdListos.className = 'lista-cell listos-cell';
+    const wrapListos = document.createElement('div');
+    wrapListos.className = 'lista-wrap';
+    const txtListos = document.createElement('span');
+    txtListos.className = 'lista-texto';
+    txtListos.id = 'txt-listos-'+item.ot;
+    txtListos.textContent = formatoCelda(listos);
+    const btnCopyListos = document.createElement('button');
+    btnCopyListos.className = 'btn-copiar';
+    btnCopyListos.id = 'btn-copy-listos-'+item.ot;
+    btnCopyListos.title = 'Copiar documentos registrados';
+    btnCopyListos.textContent = '📋';
+    btnCopyListos.dataset.texto = formatoCopiado('Documentos registrados', listos);
+    btnCopyListos.addEventListener('click', ()=>{
+      copiarTexto(btnCopyListos.dataset.texto, btnCopyListos);
+    });
+    wrapListos.appendChild(txtListos);
+    wrapListos.appendChild(btnCopyListos);
+    tdListos.appendChild(wrapListos);
+    tr.appendChild(tdListos);
+
+    // Celda Faltantes
+    const tdFaltantes = document.createElement('td');
+    tdFaltantes.className = 'lista-cell faltantes-cell';
+    const wrapFaltantes = document.createElement('div');
+    wrapFaltantes.className = 'lista-wrap';
+    const txtFaltantes = document.createElement('span');
+    txtFaltantes.className = 'lista-texto';
+    txtFaltantes.id = 'txt-faltantes-'+item.ot;
+    txtFaltantes.textContent = formatoCelda(faltantes);
+    const btnCopyFaltantes = document.createElement('button');
+    btnCopyFaltantes.className = 'btn-copiar';
+    btnCopyFaltantes.id = 'btn-copy-faltantes-'+item.ot;
+    btnCopyFaltantes.title = 'Copiar documentos faltantes';
+    btnCopyFaltantes.textContent = '📋';
+    btnCopyFaltantes.dataset.texto = formatoCopiado('Documentos faltantes', faltantes);
+    btnCopyFaltantes.addEventListener('click', ()=>{
+      copiarTexto(btnCopyFaltantes.dataset.texto, btnCopyFaltantes);
+    });
+    wrapFaltantes.appendChild(txtFaltantes);
+    wrapFaltantes.appendChild(btnCopyFaltantes);
+    tdFaltantes.appendChild(wrapFaltantes);
+    tr.appendChild(tdFaltantes);
+
+    body.appendChild(tr);
+  });
+
+  actualizarBottomScrollbar();
+}
+
+function renderStats(){
+  const itemsGrupo = state.items.filter(item=>item.grupo===grupoActual);
+  const total = itemsGrupo.length;
+  let completos = 0, conFaltantes = 0, sinRevisar = 0;
+  itemsGrupo.forEach(item=>{
+    const arr = state.docs[item.ot];
+    const ok = arr.filter(v=>v.estado==='ok').length;
+    const bad = arr.filter(v=>v.estado==='bad').length;
+    if(ok === NUM_DOCS) completos++;
+    else if(bad>0) conFaltantes++;
+    if(ok===0 && bad===0) sinRevisar++;
+  });
+  const box = document.getElementById('statsDocs');
+  box.innerHTML = `
+    <div class="stat-card"><div class="num">${total}</div><div class="lbl">Total OT</div></div>
+    <div class="stat-card"><div class="num" style="color:var(--verde)">${completos}</div><div class="lbl">Expedientes completos</div></div>
+    <div class="stat-card"><div class="num" style="color:var(--rojo)">${conFaltantes}</div><div class="lbl">Con faltantes</div></div>
+    <div class="stat-card"><div class="num" style="color:var(--texto-suave)">${sinRevisar}</div><div class="lbl">Sin revisar</div></div>
+  `;
+}
+
+/* =====================================================
+   RENDER: TABLERO DE REVISIONES (individuales por OT)
+===================================================== */
+
+// Número de columnas a mostrar = la mayor cantidad de revisiones entre
+// las OT del grupo actualmente seleccionado.
+function calcularColumnasRevisiones(){
+  let max = 1;
+  state.items.forEach(item=>{
+    if(item.grupo !== grupoActual) return;
+    const len = state.revs[item.ot].length;
+    if(len > max) max = len;
+  });
+  return max;
+}
+
+function renderRevsHead(){
+  const row = document.getElementById('revsHeadRow');
+  while(row.children.length > 2) row.removeChild(row.lastChild);
+
+  const columnas = calcularColumnasRevisiones();
+  for(let r=1;r<=columnas;r++){
+    const th = document.createElement('th');
+    th.style.minWidth = '190px';
+    th.textContent = 'Revisión '+r;
+    row.appendChild(th);
+  }
+
+  const thAcciones = document.createElement('th');
+  thAcciones.style.minWidth = '150px';
+  thAcciones.textContent = 'Revisiones (agregar/quitar)';
+  row.appendChild(thAcciones);
+}
+
+function agregarRevisionOT(ot){
+  if(state.revs[ot].length >= state.maxRevisiones){
+    alert('Esta OT ya alcanzó el límite máximo de revisiones configurado ('+state.maxRevisiones+').');
+    return;
+  }
+  state.revs[ot].push({ checked:false, fecha:'' });
+  guardarEstado();
+  renderRevsHead();
+  renderRevsBody(document.getElementById('searchRevs').value);
+}
+
+function quitarRevisionOT(ot){
+  if(state.revs[ot].length <= 1){
+    alert('Debe quedar al menos una revisión para esta OT.');
+    return;
+  }
+  if(!confirm('¿Eliminar la última revisión de la OT '+ot+'? Se perderán sus datos.')) return;
+  state.revs[ot].pop();
+  guardarEstado();
+  renderRevsHead();
+  renderRevsBody(document.getElementById('searchRevs').value);
+}
+
+function fechaHoy(){
+  const hoy = new Date();
+  const y = hoy.getFullYear();
+  const m = String(hoy.getMonth()+1).padStart(2,'0');
+  const d = String(hoy.getDate()).padStart(2,'0');
+  return `${y}-${m}-${d}`;
+}
+
+function renderRevsBody(filter){
+  const body = document.getElementById('revsBody');
+  body.innerHTML = '';
+  const f = (filter||'').trim().toLowerCase();
+  const columnas = calcularColumnasRevisiones();
+
+  state.items.forEach(item=>{
+    if(item.grupo !== grupoActual) return;
+    if(f && !(item.ot.toLowerCase().includes(f) || item.permiso.toLowerCase().includes(f))) return;
+
+    const tr = document.createElement('tr');
+
+    const tdOt = document.createElement('td');
+    tdOt.className = 'sticky-col ot-cell';
+    tdOt.textContent = item.ot;
+    tr.appendChild(tdOt);
+
+    const tdPermiso = document.createElement('td');
+    tdPermiso.className = 'sticky-col2 permiso-cell';
+    tdPermiso.textContent = item.permiso;
+    tr.appendChild(tdPermiso);
+
+    const revsOT = state.revs[item.ot];
+
+    for(let r=0;r<columnas;r++){
+      const td = document.createElement('td');
+
+      if(r < revsOT.length){
+        const revData = revsOT[r];
+        const wrap = document.createElement('div');
+        wrap.className = 'rev-cell-wrap';
+
+        const btn = document.createElement('button');
+        btn.className = 'chk' + (revData.checked ? ' ok' : '');
+        btn.textContent = revData.checked ? '✅' : '';
+
+        const dateInput = document.createElement('input');
+        dateInput.type = 'date';
+        dateInput.className = 'rev-date';
+        dateInput.value = revData.fecha || '';
+        dateInput.disabled = !revData.checked;
+
+        btn.addEventListener('click', ()=>{
+          revData.checked = !revData.checked;
+          // Al marcar, la fecha se llena automáticamente con hoy; al desmarcar, se limpia.
+          if(revData.checked){
+            revData.fecha = fechaHoy();
+          }else{
+            revData.fecha = '';
+          }
+          guardarEstado();
+          renderRevsBody(document.getElementById('searchRevs').value);
+        });
+
+        dateInput.addEventListener('change', ()=>{
+          revData.fecha = dateInput.value;
+          guardarEstado();
+        });
+
+        wrap.appendChild(btn);
+        wrap.appendChild(dateInput);
+        td.appendChild(wrap);
+      }else{
+        const span = document.createElement('span');
+        span.className = 'rev-cell-empty';
+        span.textContent = '—';
+        td.appendChild(span);
+      }
+
+      tr.appendChild(td);
+    }
+
+    // Columna de acciones: agregar / quitar revisión para esta OT específica
+    const tdAcciones = document.createElement('td');
+    const accWrap = document.createElement('div');
+    accWrap.className = 'rev-actions-wrap';
+
+    const badge = document.createElement('span');
+    badge.className = 'rev-count-badge';
+    badge.textContent = `${revsOT.length}/${state.maxRevisiones}`;
+
+    const btnMas = document.createElement('button');
+    btnMas.className = 'btn-mini verde';
+    btnMas.textContent = '➕';
+    btnMas.title = 'Agregar revisión a esta OT';
+    btnMas.disabled = revsOT.length >= state.maxRevisiones;
+    btnMas.addEventListener('click', ()=> agregarRevisionOT(item.ot));
+
+    const btnMenos = document.createElement('button');
+    btnMenos.className = 'btn-mini rojo';
+    btnMenos.textContent = '➖';
+    btnMenos.title = 'Quitar la última revisión de esta OT';
+    btnMenos.disabled = revsOT.length <= 1;
+    btnMenos.addEventListener('click', ()=> quitarRevisionOT(item.ot));
+
+    accWrap.appendChild(btnMenos);
+    accWrap.appendChild(badge);
+    accWrap.appendChild(btnMas);
+    tdAcciones.appendChild(accWrap);
+    tr.appendChild(tdAcciones);
+
+    body.appendChild(tr);
+  });
+
+  actualizarBottomScrollbar();
+}
+
+/* =====================================================
+   TABS
+===================================================== */
+document.querySelectorAll('.tab-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    const tab = btn.dataset.tab;
+    document.getElementById('panel-docs').style.display = tab==='docs' ? 'block' : 'none';
+    document.getElementById('panel-revs').style.display = tab==='revs' ? 'block' : 'none';
+    actualizarBottomScrollbar();
+  });
+});
+
+/* =====================================================
+   BÚSQUEDA
+===================================================== */
+document.getElementById('searchDocs').addEventListener('input', e=>{
+  renderDocsBody(e.target.value);
+});
+document.getElementById('searchRevs').addEventListener('input', e=>{
+  renderRevsBody(e.target.value);
+});
+
+/* =====================================================
+   SELECTOR DE GRUPO (eventos)
+===================================================== */
+document.getElementById('grupoSelectDocs').addEventListener('change', e=>{
+  cambiarGrupo(e.target.value);
+});
+document.getElementById('grupoSelectRevs').addEventListener('change', e=>{
+  cambiarGrupo(e.target.value);
+});
+
+/* =====================================================
+   CONTROL GLOBAL: MÁXIMO DE REVISIONES
+===================================================== */
+document.getElementById('maxRevInput').addEventListener('change', e=>{
+  let val = parseInt(e.target.value, 10);
+  if(isNaN(val) || val < 1) val = 1;
+  state.maxRevisiones = val;
+  e.target.value = val;
+  guardarEstado();
+  renderRevsBody(document.getElementById('searchRevs').value);
+});
+
+/* =====================================================
+   EXPORTAR PNG
+===================================================== */
+document.getElementById('btnExportPNG').addEventListener('click', ()=>{
+  const activeTab = document.querySelector('.tab-btn.active').dataset.tab;
+  const target = activeTab==='docs' ? document.getElementById('panel-docs') : document.getElementById('panel-revs');
+  html2canvas(target, { scale:2, backgroundColor:'#ffffff' }).then(canvas=>{
+    const link = document.createElement('a');
+    link.download = 'revision_documental_'+activeTab+'.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  });
+});
+
+/* =====================================================
+   EXPORTAR EXCEL
+===================================================== */
+document.getElementById('btnExportXLSX').addEventListener('click', ()=>{
+  const wb = XLSX.utils.book_new();
+  const itemsGrupo = state.items.filter(item=>item.grupo===grupoActual);
+
+  // Hoja Documentos
+  const docsRows = [];
+  const header1 = ['OT','Permiso'];
+  for(let i=1;i<=NUM_DOCS;i++) header1.push('D'+i);
+  header1.push('Listos','Faltantes');
+  docsRows.push(header1);
+
+  itemsGrupo.forEach(item=>{
+    const row = [item.ot, item.permiso];
+    state.docs[item.ot].forEach(v=>{
+      let val = '';
+      if(v.estado==='ok') val = v.comentario ? `OK: ${v.comentario}` : 'OK';
+      else if(v.estado==='bad') val = v.comentario ? `FALTA: ${v.comentario}` : 'FALTA';
+      row.push(val);
+    });
+    const { listos, faltantes } = calcListosFaltantes(item.ot);
+    row.push(formatoCelda(listos));
+    row.push(formatoCelda(faltantes));
+    docsRows.push(row);
+  });
+  const wsDocs = XLSX.utils.aoa_to_sheet(docsRows);
+  XLSX.utils.book_append_sheet(wb, wsDocs, 'Documentos');
+
+  // Hoja Revisiones
+  const columnas = calcularColumnasRevisiones();
+  const revRows = [];
+  const header2 = ['OT','Permiso'];
+  for(let r=1;r<=columnas;r++){
+    header2.push('Revisión '+r);
+    header2.push('Fecha '+r);
+  }
+  revRows.push(header2);
+
+  itemsGrupo.forEach(item=>{
+    const row = [item.ot, item.permiso];
+    const revsOT = state.revs[item.ot];
+    for(let r=0;r<columnas;r++){
+      if(r < revsOT.length){
+        row.push(revsOT[r].checked ? 'OK' : '');
+        row.push(revsOT[r].fecha || '');
+      }else{
+        row.push('');
+        row.push('');
+      }
+    }
+    revRows.push(row);
+  });
+  const wsRevs = XLSX.utils.aoa_to_sheet(revRows);
+  XLSX.utils.book_append_sheet(wb, wsRevs, 'Revisiones');
+
+  XLSX.writeFile(wb, 'revision_documental_'+grupoActual+'.xlsx');
+});
+
+/* =====================================================
+   INIT
+===================================================== */
+function renderAll(){
+  poblarSelectGrupos();
+  renderDocsHead();
+  renderDocsBody('');
+  renderStats();
+  renderRevsHead();
+  renderRevsBody('');
+  document.getElementById('maxRevInput').value = state.maxRevisiones;
+}
+
+(async function iniciar(){
+  await cargarEstado();
+  renderAll();
+  initScrollSync();
+  actualizarBottomScrollbar();
+})();
+</script>
+</body>
+</html>
