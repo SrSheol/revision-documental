@@ -10,6 +10,24 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
+<!-- Chart.js (gráficas de cumplimiento y faltantes).
+     IMPORTANTE: la URL de cdnjs debe apuntar a una versión que exista
+     realmente (verificado); una versión inexistente devuelve 404 y
+     window.Chart queda undefined SIN lanzar ningún error de JS visible
+     a simple vista (solo aparece como fallo de red en la pestaña
+     "Network" de las herramientas de desarrollador), lo que hacía que
+     las gráficas se vieran en blanco sin explicación aparente. -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.5.0/chart.umd.min.js"></script>
+<script>
+  // Red de seguridad: si por cualquier motivo (bloqueo de red, adblock,
+  // cambio futuro de versión, etc.) cdnjs no cargó Chart.js, se intenta
+  // una segunda fuente (jsDelivr) antes de que el resto del script la
+  // necesite.
+  if (typeof window.Chart === 'undefined') {
+    document.write('<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.min.js"><\/script>');
+  }
+</script>
+
 <!-- Firebase (SDK compat) -->
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
@@ -399,7 +417,7 @@
   .stats-bar{
     display:flex;
     gap:14px;
-    margin-bottom:14px;
+    margin-bottom:0;
     flex-wrap:wrap;
   }
   .stat-card{
@@ -411,6 +429,62 @@
   }
   .stat-card .num{font-size:20px;font-weight:800;color:var(--azul-oscuro);}
   .stat-card .lbl{font-size:11px;color:var(--texto-suave);}
+
+  /* ===================== FILA SUPERIOR: CONTADORES + GRÁFICAS ===================== */
+  /* NOTA IMPORTANTE sobre Chart.js: el canvas necesita que su contenedor
+     directo tenga una ALTURA EXPLÍCITA Y ESTABLE (no derivada de flex-grow
+     sobre un contenedor de altura automática), o Chart.js calculará un
+     tamaño de 0px y "dibujará" en blanco sin lanzar ningún error. Por eso
+     aquí se evita "flex:1" en los contenedores del canvas y se usan
+     alturas fijas en píxeles en su lugar. */
+  .docs-top-row{
+    display:flex;
+    align-items:flex-start;
+    gap:16px;
+    flex-wrap:wrap;
+    margin-bottom:14px;
+  }
+  .docs-top-row .stats-bar{
+    flex:0 0 auto;
+    align-content:flex-start;
+  }
+  .charts-bar{
+    display:flex;
+    gap:14px;
+    flex:1;
+    min-width:280px;
+    flex-wrap:wrap;
+    align-items:stretch;
+  }
+  .chart-card{
+    background:var(--gris-fondo);
+    border:1px solid var(--gris-borde);
+    border-radius:10px;
+    padding:10px 14px 12px 14px;
+    flex:1;
+    min-width:220px;
+    display:flex;
+    flex-direction:column;
+    height:230px; /* altura fija: evita el colapso a 0px del canvas hijo */
+  }
+  .chart-card-title{
+    font-size:11px;
+    font-weight:700;
+    color:var(--texto-suave);
+    margin-bottom:6px;
+    text-transform:uppercase;
+    letter-spacing:0.3px;
+    flex:0 0 auto;
+  }
+  .chart-canvas-wrap{
+    position:relative;
+    width:100%;
+    height:190px; /* altura fija en px, NO flex:1 */
+    flex:0 0 auto;
+  }
+  .chart-canvas-wrap canvas{
+    display:block;
+  }
 
   .loading-overlay{
     position:fixed;
@@ -525,6 +599,20 @@
   }
   .btn-cambiar-usuario:hover{background:rgba(255,255,255,0.15);}
 
+  .btn-tema{
+    background:transparent;
+    border:1.5px solid #fff;
+    color:#fff;
+    border-radius:8px;
+    padding:8px 12px;
+    font-size:15px;
+    line-height:1;
+    cursor:pointer;
+    transition:background .15s ease, transform .1s ease;
+  }
+  .btn-tema:hover{background:rgba(255,255,255,0.15);}
+  .btn-tema:active{transform:scale(0.92);}
+
   /* ===================== MODAL DE ALERTA (límite de revisiones, etc.) ===================== */
   .alert-modal-overlay{
     position:fixed;
@@ -617,6 +705,108 @@
   .bottom-scrollbar::-webkit-scrollbar-thumb{background:var(--azul-oscuro);border-radius:7px;}
   #bottomScrollbarInner{height:1px;}
 
+  /* ===================== MODO OSCURO ===================== */
+  /* Redefinir las variables de color en body.dark-mode hace que TODA regla
+     que use var(--gris-fondo), var(--gris-borde), var(--texto), etc. (que
+     es la gran mayoría del CSS de esta página) cambie automáticamente de
+     color sin duplicar reglas. Solo los pocos elementos con colores
+     "quemados" (#fff, #F8FBFB, etc. en vez de var(--...)) necesitan una
+     regla explícita aquí abajo. */
+  body.dark-mode{
+    --gris-fondo: #1E2A2D;
+    --gris-borde: #33454A;
+    --texto: #E8EEF0;
+    --texto-suave: #9FB0B3;
+    background: linear-gradient(180deg, #161F21 0%, #1B2426 100%);
+    color-scheme: dark; /* mejora el contraste de selects/inputs nativos del navegador */
+  }
+  body.dark-mode header{
+    background: linear-gradient(90deg, #123338, #1B5B60);
+  }
+  body.dark-mode .tab-btn{
+    background: #223234;
+    border-color: var(--gris-borde);
+    color: var(--texto-suave);
+  }
+  body.dark-mode .tab-btn.active{
+    background: var(--azul-oscuro);
+    color: #fff;
+    border-color: var(--azul-oscuro);
+  }
+  body.dark-mode .panel{
+    background: #1E2A2D;
+    border-color: var(--gris-borde);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.35);
+  }
+  body.dark-mode .btn-blanco{
+    background: #263437;
+    color: var(--azul);
+  }
+  body.dark-mode .grupo-select,
+  body.dark-mode .login-select{
+    background: #263437;
+    color: var(--azul);
+    border-color: var(--gris-borde);
+  }
+  body.dark-mode .search-box input,
+  body.dark-mode .comment-input,
+  body.dark-mode .rev-date,
+  body.dark-mode .max-rev-box input{
+    background: #263437;
+    color: var(--texto);
+    border-color: var(--gris-borde);
+  }
+  body.dark-mode .search-box input::placeholder,
+  body.dark-mode .comment-input::placeholder{
+    color: var(--texto-suave);
+  }
+  body.dark-mode th.sticky-col, body.dark-mode td.sticky-col,
+  body.dark-mode th.sticky-col2, body.dark-mode td.sticky-col2{
+    background: #1E2A2D;
+  }
+  body.dark-mode thead th.sticky-col, body.dark-mode thead th.sticky-col2{
+    background: var(--azul-oscuro);
+  }
+  body.dark-mode tbody tr:nth-child(even) td:not(.sticky-col):not(.sticky-col2){
+    background: #212E31;
+  }
+  body.dark-mode tbody tr:nth-child(even) td.sticky-col,
+  body.dark-mode tbody tr:nth-child(even) td.sticky-col2{
+    background: #212E31;
+  }
+  body.dark-mode tbody tr:hover td{
+    background: #263639;
+  }
+  body.dark-mode .chk{
+    background: #263437;
+    border-color: var(--gris-borde);
+  }
+  body.dark-mode .rev-date:disabled{
+    background: #1B2426;
+    color: #5C6D70;
+  }
+  body.dark-mode .login-card,
+  body.dark-mode .alert-modal-card{
+    background: #1E2A2D;
+    color: var(--texto);
+  }
+  body.dark-mode .bottom-scrollbar{
+    background: #1E2A2D;
+    border-top-color: var(--gris-borde);
+  }
+  body.dark-mode .bottom-scrollbar::-webkit-scrollbar-track{
+    background: #1E2A2D;
+  }
+  body.dark-mode .btn-copiar{
+    background: #263437;
+    border-color: var(--gris-borde);
+    color: var(--texto);
+  }
+  body.dark-mode .btn-copiar:hover{
+    background: var(--azul);
+    color: #12222A;
+  }
+
   @media (max-width:700px){
     header{padding:14px 14px;}
     header h1{font-size:17px;}
@@ -624,6 +814,10 @@
     .tabs{padding:12px 8px 0 8px;}
     table{font-size:11px;}
     .chk{width:22px;height:22px;font-size:12px;}
+    .docs-top-row{flex-direction:column;}
+    .charts-bar{flex-direction:column;}
+    .chart-card{height:250px;}
+    .chart-canvas-wrap{height:210px;}
   }
 </style>
 </head>
@@ -667,6 +861,7 @@
       <span id="currentUserNombre"></span>
     </span>
     <button class="btn-cambiar-usuario" id="btnCambiarUsuario">Cambiar usuario</button>
+    <button class="btn-tema" id="btnToggleTema" title="Cambiar modo claro/oscuro">🌙</button>
     <span class="save-status" id="saveStatus">✓ Sincronizado</span>
     <button class="btn btn-amarillo" id="btnExportPNG">🖼 PNG</button>
     <button class="btn btn-blanco" id="btnExportXLSX">📊 Excel</button>
@@ -683,7 +878,23 @@
 
   <!-- ===================== PANEL DOCUMENTOS ===================== -->
   <section class="panel" id="panel-docs">
-    <div class="stats-bar" id="statsDocs"></div>
+    <div class="docs-top-row">
+      <div class="stats-bar" id="statsDocs"></div>
+      <div class="charts-bar" id="chartsDocs">
+        <div class="chart-card">
+          <div class="chart-card-title">📈 Cumplimiento del grupo</div>
+          <div class="chart-canvas-wrap">
+            <canvas id="chartCumplimiento"></canvas>
+          </div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-card-title">🚫 Documentos con más faltantes</div>
+          <div class="chart-canvas-wrap">
+            <canvas id="chartFaltantes"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
     <div class="panel-toolbar">
       <div class="grupo-select-wrap">
         <label for="grupoSelectDocs">Grupo:</label>
@@ -1402,6 +1613,7 @@ function confirmarLogin(){
   usuarioActual = nombre;
   localStorage.setItem(LOGIN_STORAGE_KEY, usuarioActual);
   actualizarBadgeUsuario();
+  cargarTemaUsuario(); // aplica el modo claro/oscuro guardado para este usuario
   ocultarModalLogin();
   iniciarApp();
 }
@@ -1410,6 +1622,55 @@ document.getElementById('loginBtn').addEventListener('click', confirmarLogin);
 document.getElementById('btnCambiarUsuario').addEventListener('click', ()=>{
   mostrarModalLogin();
 });
+
+/* =====================================================
+   MODO OSCURO / CLARO (preferencia guardada por usuario)
+   Cada usuario tiene su propia clave en localStorage
+   ("revDoc_tema_<nombre>"), así que el modo elegido se
+   recuerda de forma independiente la próxima vez que esa
+   persona vuelva a identificarse en el mismo navegador.
+===================================================== */
+const TEMA_STORAGE_PREFIX = 'revDoc_tema_';
+
+// Clave de localStorage para el tema del usuario dado (o un usuario
+// genérico "_sin_usuario" mientras nadie se ha identificado todavía).
+function claveTemaUsuario(){
+  return TEMA_STORAGE_PREFIX + (usuarioActual || '_sin_usuario');
+}
+
+// Aplica el modo ('dark' o 'light') al documento: alterna la clase
+// body.dark-mode (de la que cuelgan todas las reglas CSS del tema
+// oscuro), actualiza el ícono del botón y redibuja las gráficas para
+// que tomen los colores de ejes/leyendas correctos del nuevo tema.
+function aplicarTema(modo){
+  const oscuro = modo === 'dark';
+  document.body.classList.toggle('dark-mode', oscuro);
+  const btn = document.getElementById('btnToggleTema');
+  if(btn){
+    btn.textContent = oscuro ? '☀️' : '🌙';
+    btn.title = oscuro ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro';
+  }
+  // Las gráficas de Chart.js no heredan CSS: sus colores de texto/rejilla
+  // se definen en JS al crearlas, así que hay que volver a dibujarlas
+  // para que coincidan con el tema recién aplicado.
+  renderCharts();
+}
+
+// Carga y aplica el tema guardado para el usuario actualmente
+// identificado (o "claro" por defecto si nunca lo cambió).
+function cargarTemaUsuario(){
+  const guardado = localStorage.getItem(claveTemaUsuario());
+  aplicarTema(guardado === 'dark' ? 'dark' : 'light');
+}
+
+// Alterna entre claro/oscuro y guarda la preferencia para el usuario actual.
+function alternarTema(){
+  const nuevoModo = document.body.classList.contains('dark-mode') ? 'light' : 'dark';
+  localStorage.setItem(claveTemaUsuario(), nuevoModo);
+  aplicarTema(nuevoModo);
+}
+
+document.getElementById('btnToggleTema').addEventListener('click', alternarTema);
 
 /* =====================================================
    BARRA DE SCROLL HORIZONTAL FIJA (sincronizada)
@@ -1718,6 +1979,328 @@ function renderStats(){
     <div class="stat-card"><div class="num" style="color:var(--rojo)">${conFaltantes}</div><div class="lbl">Con faltantes</div></div>
     <div class="stat-card"><div class="num" style="color:var(--texto-suave)">${sinRevisar}</div><div class="lbl">Sin revisar</div></div>
   `;
+
+  // Las gráficas dependen de los mismos datos (estado de documentos por
+  // OT del grupo actual), así que se recalculan cada vez que las
+  // estadísticas cambian -> se mantienen sincronizadas en tiempo real.
+  // Se usa setTimeout(0) para dejar que el navegador termine de aplicar
+  // los cambios de innerHTML de arriba antes de medir/dibujar el canvas.
+  setTimeout(renderCharts, 0);
+}
+
+/* =====================================================
+   RENDER: GRÁFICAS (Chart.js)
+   - chartCumplimiento: dona con el % de documentos ✅
+     sobre el total posible (OTs del grupo × 22).
+   - chartFaltantes: barras horizontales con el % de OTs
+     del grupo que tienen cada documento (D1–D22) marcado
+     como ❌, ordenadas de mayor a menor.
+   Ambas se DESTRUYEN Y RECREAN por completo cada vez que
+   se llama a renderCharts() (disparado desde renderStats()),
+   en vez de solo actualizar sus datos: es el patrón más
+   robusto para evitar canvas "fantasma" que quedan en blanco
+   por instancias de Chart.js en un estado inconsistente.
+===================================================== */
+let chartCumplimientoInstance = null;
+let chartFaltantesInstance = null;
+
+// Devuelve la paleta de colores que deben usar los ejes, rejillas y
+// textos dibujados a mano dentro de las gráficas (Chart.js no lee estos
+// colores del CSS, así que hay que decidirlos en JS según el tema activo).
+function coloresGrafica(){
+  const oscuro = document.body.classList.contains('dark-mode');
+  return oscuro ? {
+    grid: '#33454A',
+    tick: '#9FB0B3',
+    centerMain: '#60D8DF',
+    centerSub: '#9FB0B3',
+    barLabel: '#E8EEF0',
+    donutPendiente: '#33454A'
+  } : {
+    grid: '#DCE4E6',
+    tick: '#5B6C6E',
+    centerMain: '#1F6F75',
+    centerSub: '#5B6C6E',
+    barLabel: '#223133',
+    donutPendiente: '#DCE4E6'
+  };
+}
+
+// Plugin personalizado para dibujar el porcentaje en el centro de la dona.
+const centerTextPlugin = {
+  id: 'centerTextPlugin',
+  afterDraw(chart){
+    if(chart.config.type !== 'doughnut') return;
+    const { ctx, chartArea } = chart;
+    if(!chartArea) return;
+    const { left, right, top, bottom } = chartArea;
+    const centerX = (left + right) / 2;
+    const centerY = (top + bottom) / 2;
+    const pct = chart.data.datasets[0].data[0] || 0;
+    const colores = coloresGrafica();
+
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = colores.centerMain;
+    ctx.font = '700 22px Segoe UI, Roboto, Helvetica, Arial, sans-serif';
+    ctx.fillText(pct.toFixed(1).replace('.0','') + '%', centerX, centerY - 6);
+    ctx.font = '600 10px Segoe UI, Roboto, Helvetica, Arial, sans-serif';
+    ctx.fillStyle = colores.centerSub;
+    ctx.fillText('cumplimiento', centerX, centerY + 14);
+    ctx.restore();
+  }
+};
+
+// Plugin personalizado para escribir el valor exacto ("12.5%") encima de
+// cada barra de la gráfica de faltantes, así se puede leer directamente
+// sin necesidad de pasar el mouse sobre la barra.
+const barValueLabelsPlugin = {
+  id: 'barValueLabelsPlugin',
+  afterDatasetsDraw(chart){
+    if(chart.config.type !== 'bar') return;
+    const { ctx } = chart;
+    const meta = chart.getDatasetMeta(0);
+    const valores = chart.data.datasets[0].data;
+    const colores = coloresGrafica();
+
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.font = '700 9px Segoe UI, Roboto, Helvetica, Arial, sans-serif';
+    ctx.fillStyle = colores.barLabel;
+    meta.data.forEach((bar, idx)=>{
+      const valor = valores[idx] || 0;
+      const texto = valor.toFixed(1).replace('.0','') + '%';
+      // 4px de separación por encima de la punta de la barra; si la barra
+      // está casi al tope (cerca de 100%), la etiqueta sube más para no
+      // quedar recortada contra el borde superior del canvas.
+      ctx.fillText(texto, bar.x, bar.y - 4);
+    });
+    ctx.restore();
+  }
+};
+
+// El registro de los plugins se hace de forma perezosa (la primera vez
+// que se necesitan) en vez de al cargar el script, porque si Chart.js
+// llegó a fallar al cargar (ver <head>) y luego se recupera vía el
+// fallback de jsDelivr, "window.Chart" podría no existir todavía en el
+// momento en que este <script> se ejecuta por primera vez.
+let pluginsRegistrados = false;
+function asegurarPluginRegistrado(){
+  if(pluginsRegistrados) return;
+  if(window.Chart && typeof Chart.register === 'function'){
+    Chart.register(centerTextPlugin, barValueLabelsPlugin);
+    pluginsRegistrados = true;
+  }
+}
+
+// Calcula y dibuja ambas gráficas para el grupo actualmente seleccionado.
+function renderCharts(){
+  // Si Chart.js todavía no ha terminado de cargar (p.ej. la primera
+  // vez que se llama, justo después de ocultarse el overlay de carga),
+  // se reintenta en un momento en vez de abortar silenciosamente.
+  if(typeof window.Chart === 'undefined'){
+    console.warn('[Gráficas] Chart.js aún no está disponible, reintentando en 200ms...');
+    setTimeout(renderCharts, 200);
+    return;
+  }
+  if(!state) return;
+
+  asegurarPluginRegistrado();
+
+  const itemsGrupo = state.items.filter(item=>item.grupo===grupoActual);
+  const totalOT = itemsGrupo.length;
+  const totalDocsPosibles = totalOT * NUM_DOCS;
+
+  let okCount = 0;
+  let badCount = 0;
+  const badPorDoc = Array.from({length:NUM_DOCS}, ()=>0);
+
+  itemsGrupo.forEach(item=>{
+    const arr = state.docs[item.ot];
+    arr.forEach((v, idx)=>{
+      if(v.estado === 'ok') okCount++;
+      else if(v.estado === 'bad'){ badCount++; badPorDoc[idx]++; }
+    });
+  });
+
+  const pctCumplimiento = totalDocsPosibles > 0
+    ? Math.round((okCount / totalDocsPosibles) * 1000) / 10
+    : 0;
+
+  // Log temporal de depuración: confirma que a las gráficas SÍ les están
+  // llegando datos reales (y no un arreglo vacío o todo en cero por un
+  // filtro de grupo mal aplicado, por ejemplo). Se puede quitar una vez
+  // confirmado que todo funciona.
+  console.log('[Gráficas] grupo:', grupoActual, '| OT en el grupo:', totalOT,
+    '| documentos ✅:', okCount, '| documentos ❌:', badCount,
+    '| % cumplimiento:', pctCumplimiento);
+
+  // Se dibuja SIEMPRE, incluso si pctCumplimiento es 0 o si no hay
+  // ningún documento marcado como ❌ todavía (todas las barras en 0%):
+  // una gráfica en 0% sigue siendo información válida y debe verse.
+  renderChartCumplimiento(pctCumplimiento);
+  renderChartFaltantes(badPorDoc, totalOT);
+}
+
+// Fuerza a Chart.js a recalcular el tamaño del canvas contra su
+// contenedor actual. Es indispensable llamarlo después de que un
+// contenedor pase de "display:none" a visible (p.ej. al volver a la
+// pestaña Documentos), porque mientras el panel está oculto el canvas
+// mide 0x0 y Chart.js no siempre detecta el cambio de tamaño solo.
+function resizeCharts(){
+  requestAnimationFrame(()=>{
+    try{
+      if(chartCumplimientoInstance) chartCumplimientoInstance.resize();
+      if(chartFaltantesInstance) chartFaltantesInstance.resize();
+    }catch(err){
+      console.error('Error al redimensionar las gráficas:', err);
+    }
+  });
+}
+
+function renderChartCumplimiento(pct){
+  const canvas = document.getElementById('chartCumplimiento');
+  if(!canvas){
+    console.warn('[Gráficas] No se encontró el canvas #chartCumplimiento en el DOM.');
+    return;
+  }
+
+  const pendiente = Math.max(0, Math.round((100 - pct) * 10) / 10);
+  const colores = coloresGrafica();
+  const data = {
+    labels: ['Documentos completos', 'Pendientes'],
+    datasets: [{
+      data: [pct, pendiente],
+      backgroundColor: ['#3CCF7A', colores.donutPendiente],
+      borderWidth: 0,
+      hoverOffset: 4
+    }]
+  };
+
+  // Destruye por completo cualquier instancia previa antes de crear una
+  // nueva. Es más costoso que solo llamar a .update(), pero elimina de
+  // raíz cualquier problema de un canvas que quedó en un estado
+  // inconsistente (tamaño 0 en el momento de crearse, contexto perdido,
+  // etc.) y es la forma más robusta de garantizar que siempre se dibuje.
+  if(chartCumplimientoInstance){
+    chartCumplimientoInstance.destroy();
+    chartCumplimientoInstance = null;
+  }
+
+  try{
+    const ctx = canvas.getContext('2d');
+    chartCumplimientoInstance = new Chart(ctx, {
+      type: 'doughnut',
+      data,
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: '72%',
+        animation: { duration: 300 },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: (context)=> context.label + ': ' + context.parsed + '%'
+            }
+          }
+        }
+      }
+    });
+  }catch(err){
+    console.error('[Gráficas] Error dibujando chartCumplimiento:', err);
+    chartCumplimientoInstance = null;
+  }
+}
+
+function renderChartFaltantes(badPorDoc, totalOT){
+  const canvas = document.getElementById('chartFaltantes');
+  if(!canvas){
+    console.warn('[Gráficas] No se encontró el canvas #chartFaltantes en el DOM.');
+    return;
+  }
+
+  // Construye la lista de documentos con su % de taches y ordena
+  // de mayor a menor. Se dibuja siempre, aunque todos los valores
+  // sean 0 (todas las barras al 0% son información válida).
+  const items = badPorDoc.map((count, idx)=>({
+    label: 'D' + (idx + 1),
+    pct: totalOT > 0 ? Math.round((count / totalOT) * 1000) / 10 : 0
+  }));
+  items.sort((a, b)=> b.pct - a.pct);
+
+  const labels = items.map(it=>it.label);
+  const valores = items.map(it=>it.pct);
+
+  const data = {
+    labels,
+    datasets: [{
+      label: '% con ❌',
+      data: valores,
+      backgroundColor: '#FF5C5C',
+      borderRadius: 4,
+      maxBarThickness: 14
+    }]
+  };
+
+  // Igual que en la dona: se destruye cualquier instancia previa antes
+  // de crear una nueva, en vez de intentar reutilizarla con .update().
+  if(chartFaltantesInstance){
+    chartFaltantesInstance.destroy();
+    chartFaltantesInstance = null;
+  }
+
+  try{
+    const ctx = canvas.getContext('2d');
+    const colores = coloresGrafica();
+    chartFaltantesInstance = new Chart(ctx, {
+      type: 'bar',
+      data,
+      options: {
+        // Sin "indexAxis: 'y'" (o con indexAxis: 'x', que es el valor
+        // por defecto), las barras se dibujan verticales: la categoría
+        // (cada documento D1..D22) queda en el eje X y el valor
+        // (porcentaje de faltantes) en el eje Y.
+        indexAxis: 'x',
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: { duration: 300 },
+        // Espacio extra arriba del área de dibujo para que la etiqueta
+        // de porcentaje de las barras más altas (cercanas al 100%) no
+        // quede recortada contra el borde superior del canvas.
+        layout: { padding: { top: 18 } },
+        scales: {
+          x: {
+            ticks: { font: { size: 10 }, color: colores.tick },
+            grid: { display: false }
+          },
+          y: {
+            min: 0,
+            max: 100,
+            ticks: {
+              callback: (v)=> v + '%',
+              font: { size: 10 },
+              color: colores.tick
+            },
+            grid: { color: colores.grid }
+          }
+        },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: (context)=> context.parsed.y + '% de las OT tienen ' + context.label + ' faltante'
+            }
+          }
+        }
+      }
+    });
+  }catch(err){
+    console.error('[Gráficas] Error dibujando chartFaltantes:', err);
+    chartFaltantesInstance = null;
+  }
 }
 
 /* =====================================================
@@ -1973,6 +2556,15 @@ document.querySelectorAll('.tab-btn').forEach(btn=>{
     if(tab==='manejo'){
       renderManejoInterno(document.getElementById('searchManejo').value);
     }
+    if(tab==='docs'){
+      // Al volver a la pestaña de documentos, refresca los datos de las
+      // gráficas y además fuerza un resize: mientras el panel estaba
+      // oculto (display:none) el canvas medía 0x0, así que Chart.js
+      // necesita que se le indique explícitamente que vuelva a medir
+      // su contenedor para dibujar correctamente.
+      renderCharts();
+      resizeCharts();
+    }
     actualizarBottomScrollbar();
   });
 });
@@ -2123,10 +2715,18 @@ async function iniciarApp(){
   renderAll();
   initScrollSync();
   actualizarBottomScrollbar();
+  // Pasada defensiva: justo después de la carga inicial, algunos
+  // navegadores todavía no han terminado de calcular el layout final
+  // (fuentes, reflow del overlay de carga que acaba de ocultarse, etc.),
+  // así que se fuerza un resize adicional de las gráficas en el
+  // siguiente frame para garantizar que se dibujen con el tamaño correcto.
+  resizeCharts();
+  window.addEventListener('load', resizeCharts);
 }
 
 (function iniciar(){
   actualizarBadgeUsuario();
+  cargarTemaUsuario(); // aplica el modo claro/oscuro guardado (o "claro" por defecto)
   if(usuarioActual){
     // Ya había un usuario guardado en este navegador: se salta el login.
     document.getElementById('loadingOverlay').style.display = 'flex';
