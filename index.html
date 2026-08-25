@@ -9,6 +9,8 @@
 <!-- Librerías de exportación -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 
 <!-- Chart.js (gráficas de cumplimiento y faltantes).
      IMPORTANTE: la URL de cdnjs debe apuntar a una versión que exista
@@ -431,12 +433,6 @@
   .stat-card .lbl{font-size:11px;color:var(--texto-suave);}
 
   /* ===================== FILA SUPERIOR: CONTADORES + GRÁFICAS ===================== */
-  /* NOTA IMPORTANTE sobre Chart.js: el canvas necesita que su contenedor
-     directo tenga una ALTURA EXPLÍCITA Y ESTABLE (no derivada de flex-grow
-     sobre un contenedor de altura automática), o Chart.js calculará un
-     tamaño de 0px y "dibujará" en blanco sin lanzar ningún error. Por eso
-     aquí se evita "flex:1" en los contenedores del canvas y se usan
-     alturas fijas en píxeles en su lugar. */
   .docs-top-row{
     display:flex;
     align-items:flex-start;
@@ -465,7 +461,7 @@
     min-width:220px;
     display:flex;
     flex-direction:column;
-    height:230px; /* altura fija: evita el colapso a 0px del canvas hijo */
+    height:230px;
   }
   .chart-card-title{
     font-size:11px;
@@ -479,7 +475,7 @@
   .chart-canvas-wrap{
     position:relative;
     width:100%;
-    height:190px; /* altura fija en px, NO flex:1 */
+    height:190px;
     flex:0 0 auto;
   }
   .chart-canvas-wrap canvas{
@@ -613,7 +609,7 @@
   .btn-tema:hover{background:rgba(255,255,255,0.15);}
   .btn-tema:active{transform:scale(0.92);}
 
-  /* ===================== MODAL DE ALERTA (límite de revisiones, etc.) ===================== */
+  /* ===================== MODAL DE ALERTA / ÉXITO ===================== */
   .alert-modal-overlay{
     position:fixed;
     inset:0;
@@ -642,6 +638,9 @@
     font-size:17px;
     color:var(--rojo);
   }
+  .alert-modal-card.exito h2{ color:var(--verde); }
+  .alert-modal-card.exito .alert-modal-btn{ background:var(--verde); }
+  .alert-modal-card.exito .alert-modal-btn:hover{ background:#2fb768; }
   .alert-modal-card p{
     margin:0 0 20px 0;
     font-size:13.5px;
@@ -660,6 +659,120 @@
     transition:background .15s ease;
   }
   .alert-modal-btn:hover{background:var(--azul);}
+
+  /* ===================== MODAL GENÉRICO (preview importación, resumen, actividad) ===================== */
+  .generic-modal-overlay{
+    position:fixed;
+    inset:0;
+    background:rgba(31,111,117,0.55);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    z-index:300;
+    padding:16px;
+  }
+  .generic-modal-card{
+    background:#fff;
+    border-radius:14px;
+    padding:24px 24px 20px 24px;
+    width:100%;
+    max-width:460px;
+    max-height:82vh;
+    overflow-y:auto;
+    box-shadow:0 10px 40px rgba(0,0,0,0.28);
+  }
+  .generic-modal-card h2{
+    margin:0 0 12px 0;
+    font-size:17px;
+    color:var(--azul-oscuro);
+  }
+  .generic-modal-card .resumen-linea{
+    display:flex;
+    justify-content:space-between;
+    padding:8px 10px;
+    background:var(--gris-fondo);
+    border-radius:8px;
+    margin-bottom:8px;
+    font-size:13px;
+  }
+  .generic-modal-card .resumen-linea b{ color:var(--azul-oscuro); }
+  .generic-modal-actions{
+    display:flex;
+    gap:10px;
+    margin-top:16px;
+    justify-content:flex-end;
+  }
+  .generic-modal-actions .btn{padding:9px 16px;}
+
+  /* ===================== FILTROS RÁPIDOS ===================== */
+  .filtros-rapidos{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+    margin-bottom:12px;
+  }
+  .filtro-chip{
+    background:var(--gris-fondo);
+    border:1.5px solid var(--gris-borde);
+    color:var(--texto-suave);
+    border-radius:20px;
+    padding:6px 14px;
+    font-size:12px;
+    font-weight:600;
+    cursor:pointer;
+    transition:all .12s ease;
+  }
+  .filtro-chip:hover{border-color:var(--azul);}
+  .filtro-chip.active{
+    background:var(--azul-oscuro);
+    border-color:var(--azul-oscuro);
+    color:#fff;
+  }
+
+  /* ===================== ACTIVIDAD RECIENTE ===================== */
+  .btn-actividad{
+    position:relative;
+  }
+  .activity-panel{
+    position:fixed;
+    top:0;
+    right:0;
+    bottom:0;
+    width:340px;
+    max-width:92vw;
+    background:#fff;
+    box-shadow:-4px 0 20px rgba(0,0,0,0.18);
+    z-index:250;
+    display:flex;
+    flex-direction:column;
+    transform:translateX(100%);
+    transition:transform .2s ease;
+  }
+  .activity-panel.open{transform:translateX(0);}
+  .activity-panel-head{
+    padding:16px 18px;
+    border-bottom:1px solid var(--gris-borde);
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+  }
+  .activity-panel-head h3{margin:0;font-size:15px;color:var(--azul-oscuro);}
+  .activity-panel-close{
+    background:none;border:none;font-size:18px;cursor:pointer;color:var(--texto-suave);
+  }
+  .activity-panel-body{
+    flex:1;
+    overflow-y:auto;
+    padding:10px 14px;
+  }
+  .activity-item{
+    padding:9px 10px;
+    border-bottom:1px solid var(--gris-borde);
+    font-size:12px;
+  }
+  .activity-item .act-txt{color:var(--texto);}
+  .activity-item .act-meta{color:var(--texto-suave);font-size:10.5px;margin-top:2px;}
+  .activity-empty{padding:20px;text-align:center;color:var(--texto-suave);font-size:12.5px;}
 
   /* ===================== TABLA MANEJO INTERNO ===================== */
   td.manejo-cell{
@@ -682,10 +795,6 @@
     color:var(--texto-suave);
   }
 
-  /* Barra de scroll horizontal fija en la parte inferior de la pantalla,
-     sincronizada con la tabla activa. Su posición y ancho se ajustan por
-     JS para coincidir exactamente con el contenedor de la tabla visible,
-     así el recorrido de scroll siempre llega hasta el final. */
   .bottom-scrollbar{
     position:fixed;
     left:0;
@@ -706,19 +815,13 @@
   #bottomScrollbarInner{height:1px;}
 
   /* ===================== MODO OSCURO ===================== */
-  /* Redefinir las variables de color en body.dark-mode hace que TODA regla
-     que use var(--gris-fondo), var(--gris-borde), var(--texto), etc. (que
-     es la gran mayoría del CSS de esta página) cambie automáticamente de
-     color sin duplicar reglas. Solo los pocos elementos con colores
-     "quemados" (#fff, #F8FBFB, etc. en vez de var(--...)) necesitan una
-     regla explícita aquí abajo. */
   body.dark-mode{
     --gris-fondo: #1E2A2D;
     --gris-borde: #33454A;
     --texto: #E8EEF0;
     --texto-suave: #9FB0B3;
     background: linear-gradient(180deg, #161F21 0%, #1B2426 100%);
-    color-scheme: dark; /* mejora el contraste de selects/inputs nativos del navegador */
+    color-scheme: dark;
   }
   body.dark-mode header{
     background: linear-gradient(90deg, #123338, #1B5B60);
@@ -786,9 +889,17 @@
     color: #5C6D70;
   }
   body.dark-mode .login-card,
-  body.dark-mode .alert-modal-card{
+  body.dark-mode .alert-modal-card,
+  body.dark-mode .generic-modal-card,
+  body.dark-mode .activity-panel{
     background: #1E2A2D;
     color: var(--texto);
+  }
+  body.dark-mode .generic-modal-card .resumen-linea{
+    background:#263437;
+  }
+  body.dark-mode .activity-item{
+    border-color: var(--gris-borde);
   }
   body.dark-mode .bottom-scrollbar{
     background: #1E2A2D;
@@ -806,6 +917,11 @@
     background: var(--azul);
     color: #12222A;
   }
+  body.dark-mode .filtro-chip{
+    background:#263437;
+    border-color: var(--gris-borde);
+    color: var(--texto-suave);
+  }
 
   @media (max-width:700px){
     header{padding:14px 14px;}
@@ -818,6 +934,7 @@
     .charts-bar{flex-direction:column;}
     .chart-card{height:250px;}
     .chart-canvas-wrap{height:210px;}
+    .activity-panel{width:100vw;}
   }
 </style>
 </head>
@@ -841,14 +958,28 @@
   </div>
 </div>
 
-<!-- ===================== MODAL DE ALERTA (límite de revisiones, etc.) ===================== -->
+<!-- ===================== MODAL DE ALERTA / ÉXITO ===================== -->
 <div class="alert-modal-overlay" id="alertModalOverlay" style="display:none;">
-  <div class="alert-modal-card">
-    <div class="alert-icon">⚠️</div>
-    <h2>Límite alcanzado</h2>
+  <div class="alert-modal-card" id="alertModalCard">
+    <div class="alert-icon" id="alertModalIcon">⚠️</div>
+    <h2 id="alertModalTitulo">Límite alcanzado</h2>
     <p id="alertModalMsg"></p>
     <button class="alert-modal-btn" id="alertModalBtn">Entendido</button>
   </div>
+</div>
+
+<!-- ===================== MODAL GENÉRICO (vista previa importación / resumen al entrar) ===================== -->
+<div class="generic-modal-overlay" id="genericModalOverlay" style="display:none;">
+  <div class="generic-modal-card" id="genericModalCard"></div>
+</div>
+
+<!-- ===================== PANEL LATERAL: ACTIVIDAD RECIENTE ===================== -->
+<div class="activity-panel" id="activityPanel">
+  <div class="activity-panel-head">
+    <h3>🕒 Actividad reciente</h3>
+    <button class="activity-panel-close" id="btnCloseActivity">✕</button>
+  </div>
+  <div class="activity-panel-body" id="activityPanelBody"></div>
 </div>
 
 <header>
@@ -863,8 +994,12 @@
     <button class="btn-cambiar-usuario" id="btnCambiarUsuario">Cambiar usuario</button>
     <button class="btn-tema" id="btnToggleTema" title="Cambiar modo claro/oscuro">🌙</button>
     <span class="save-status" id="saveStatus">✓ Sincronizado</span>
+    <button class="btn btn-blanco btn-actividad" id="btnActividad">🕒 Actividad</button>
+    <button class="btn btn-blanco" id="btnPlantillaExcel">📄 Plantilla Excel</button>
+    <button class="btn btn-blanco" id="btnExportPDF">📄 PDF</button>
     <input type="file" id="inputImportarExcel" accept=".xlsx,.xls" style="display:none;">
-    <button class="btn btn-verde" id="btnImportarExcel">📥 Importar lista (Excel)</button>
+    <button class="btn btn-verde" id="btnImportarExcel" style="display:none;">📥 Importar lista (Excel)</button>
+    <button class="btn btn-rojo" id="btnDeshacerImportacion" style="display:none;">↩ Deshacer última importación</button>
     <button class="btn btn-amarillo" id="btnExportPNG">🖼 PNG</button>
     <button class="btn btn-blanco" id="btnExportXLSX">📊 Excel</button>
   </div>
@@ -908,6 +1043,12 @@
       <div style="font-size:12px;color:var(--texto-suave);">
         Click = ✅ &nbsp;·&nbsp; Doble click = ❌ &nbsp;·&nbsp; Al marcar aparece un campo para escribir un comentario
       </div>
+    </div>
+    <div class="filtros-rapidos" id="filtrosRapidosDocs">
+      <button class="filtro-chip active" data-filtro="todos">Todos</button>
+      <button class="filtro-chip" data-filtro="completos">Completos</button>
+      <button class="filtro-chip" data-filtro="faltantes">Con faltantes</button>
+      <button class="filtro-chip" data-filtro="sinrevisar">Sin revisar</button>
     </div>
     <div class="table-wrap" id="tableWrapDocs">
       <table id="tableDocs">
@@ -1020,6 +1161,9 @@ const docRef = db.collection('revisiones').doc('revision-documental-v1');
 ===================================================== */
 const USUARIOS = ["Juan","Odalis","Omar","Yulandy","Judith","César","Pablo","Edwin"];
 
+// Usuarios con permisos de administración (importar Excel, deshacer importación).
+const USUARIOS_ADMIN = ["Juan","Judith"];
+
 // Edwin no tiene color especial: usa el estilo default (null = sin color).
 const USUARIO_COLORES = {
   "Juan":    "#0dbf53",
@@ -1040,6 +1184,10 @@ if(usuarioActual && !USUARIOS.includes(usuarioActual)){
   // Si el nombre guardado ya no es válido (p.ej. cambió la lista), se limpia.
   usuarioActual = null;
   localStorage.removeItem(LOGIN_STORAGE_KEY);
+}
+
+function esAdmin(){
+  return !!(usuarioActual && USUARIOS_ADMIN.includes(usuarioActual));
 }
 
 /* =====================================================
@@ -1336,6 +1484,9 @@ const DATA_INICIAL = [
 // agregar un grupo nuevo.
 let GRUPOS = [];
 
+// Valor especial reservado para la opción "Todos" en los selectores de grupo.
+const GRUPO_TODOS = '__TODOS__';
+
 // Todas las OT del catálogo actual pertenecen al grupo "PETROMAX" por
 // defecto, si no se especifica otro grupo explícitamente en el objeto.
 DATA_INICIAL.forEach(item=>{
@@ -1344,9 +1495,11 @@ DATA_INICIAL.forEach(item=>{
 
 const NUM_DOCS = 22;
 const DEFAULT_MAX_REVISIONES = 5;
+const MAX_LOG_ACTIVIDAD = 50;
 
 let state = null;
 let grupoActual = null;
+let filtroRapidoActual = 'todos';
 
 /* =====================================================
    GRUPOS: recálculo dinámico + orden alfabético (es)
@@ -1362,9 +1515,16 @@ function recalcularGrupos(){
   });
   GRUPOS = Array.from(unicos).sort((a,b)=> a.localeCompare(b, 'es', { sensitivity:'base' }));
   if(!GRUPOS.length) GRUPOS = ['PETROMAX'];
-  if(!grupoActual || !GRUPOS.includes(grupoActual)){
-    grupoActual = GRUPOS[0];
+  if(!grupoActual || (grupoActual !== GRUPO_TODOS && !GRUPOS.includes(grupoActual))){
+    grupoActual = GRUPO_TODOS;
   }
+}
+
+// Devuelve la lista de items del catálogo que corresponden al grupo
+// actualmente seleccionado (o todos, si grupoActual === GRUPO_TODOS).
+function itemsDelGrupoActual(){
+  if(grupoActual === GRUPO_TODOS) return state.items;
+  return state.items.filter(item=>item.grupo===grupoActual);
 }
 
 /* =====================================================
@@ -1386,7 +1546,9 @@ function estadoVacio(){
     items: DATA_INICIAL,
     docs,
     revs,
-    maxRevisiones: DEFAULT_MAX_REVISIONES
+    maxRevisiones: DEFAULT_MAX_REVISIONES,
+    log: [],
+    ultimaImportacion: null
   };
 }
 
@@ -1411,7 +1573,11 @@ function fusionarEstado(remoto){
     revs: {},
     maxRevisiones: (typeof remoto.maxRevisiones === 'number' && remoto.maxRevisiones >= 1)
       ? remoto.maxRevisiones
-      : DEFAULT_MAX_REVISIONES
+      : DEFAULT_MAX_REVISIONES,
+    log: Array.isArray(remoto.log) ? remoto.log.slice(0, MAX_LOG_ACTIVIDAD) : [],
+    ultimaImportacion: (remoto.ultimaImportacion && typeof remoto.ultimaImportacion === 'object')
+      ? remoto.ultimaImportacion
+      : null
   };
 
   itemsBase.forEach(item=>{
@@ -1566,20 +1732,98 @@ function copiarTextoFallback(texto){
 }
 
 /* =====================================================
-   MODAL DE ALERTA (reemplaza los alert() nativos para
-   mensajes importantes como el límite de revisiones)
+   REGISTRO DE ACTIVIDAD
+===================================================== */
+
+function fechaHoraLegible(){
+  const ahora = new Date();
+  const d = String(ahora.getDate()).padStart(2,'0');
+  const m = String(ahora.getMonth()+1).padStart(2,'0');
+  const y = ahora.getFullYear();
+  const hh = String(ahora.getHours()).padStart(2,'0');
+  const mm = String(ahora.getMinutes()).padStart(2,'0');
+  return `${d}/${m}/${y} ${hh}:${mm}`;
+}
+
+// Agrega una entrada al log de actividad (buffer limitado a MAX_LOG_ACTIVIDAD).
+function registrarActividad(texto){
+  if(!state) return;
+  if(!Array.isArray(state.log)) state.log = [];
+  state.log.unshift({
+    texto,
+    usuario: usuarioActual || '—',
+    fecha: fechaHoraLegible(),
+    ts: Date.now()
+  });
+  if(state.log.length > MAX_LOG_ACTIVIDAD){
+    state.log = state.log.slice(0, MAX_LOG_ACTIVIDAD);
+  }
+  renderActivityPanel();
+}
+
+function renderActivityPanel(){
+  const body = document.getElementById('activityPanelBody');
+  if(!body || !state) return;
+  const log = state.log || [];
+  if(!log.length){
+    body.innerHTML = '<div class="activity-empty">Aún no hay actividad registrada.</div>';
+    return;
+  }
+  body.innerHTML = log.map(entry=>`
+    <div class="activity-item">
+      <div class="act-txt">${entry.texto}</div>
+      <div class="act-meta">${entry.fecha} · ${entry.usuario}</div>
+    </div>
+  `).join('');
+}
+
+function abrirActividad(){
+  document.getElementById('activityPanel').classList.add('open');
+  renderActivityPanel();
+}
+function cerrarActividad(){
+  document.getElementById('activityPanel').classList.remove('open');
+}
+document.getElementById('btnActividad').addEventListener('click', abrirActividad);
+document.getElementById('btnCloseActivity').addEventListener('click', cerrarActividad);
+
+/* =====================================================
+   MODAL DE ALERTA / ÉXITO (reemplaza los alert() nativos)
 ===================================================== */
 function mostrarAlerta(mensaje){
   const overlay = document.getElementById('alertModalOverlay');
+  const card = document.getElementById('alertModalCard');
+  const icon = document.getElementById('alertModalIcon');
+  const titulo = document.getElementById('alertModalTitulo');
   const msgEl = document.getElementById('alertModalMsg');
   if(!overlay || !msgEl) return;
+  card.classList.remove('exito');
+  icon.textContent = '⚠️';
+  titulo.textContent = 'Límite alcanzado';
+  msgEl.textContent = mensaje;
+  overlay.style.display = 'flex';
+}
+
+// Modal de éxito (verde), independiente del de error/alerta (rojo).
+function mostrarExito(mensaje, titulo){
+  const overlay = document.getElementById('alertModalOverlay');
+  const card = document.getElementById('alertModalCard');
+  const icon = document.getElementById('alertModalIcon');
+  const tituloEl = document.getElementById('alertModalTitulo');
+  const msgEl = document.getElementById('alertModalMsg');
+  if(!overlay || !msgEl) return;
+  card.classList.add('exito');
+  icon.textContent = '✅';
+  tituloEl.textContent = titulo || 'Importación completada';
   msgEl.textContent = mensaje;
   overlay.style.display = 'flex';
 }
 
 function ocultarAlerta(){
   const overlay = document.getElementById('alertModalOverlay');
+  const card = document.getElementById('alertModalCard');
   if(overlay) overlay.style.display = 'none';
+  if(card) card.classList.remove('exito');
 }
 
 document.getElementById('alertModalBtn').addEventListener('click', ocultarAlerta);
@@ -1588,15 +1832,33 @@ document.getElementById('alertModalOverlay').addEventListener('click', (e)=>{
 });
 
 /* =====================================================
+   MODAL GENÉRICO (vista previa de importación / resumen al entrar)
+===================================================== */
+function mostrarModalGenerico(html){
+  const overlay = document.getElementById('genericModalOverlay');
+  const card = document.getElementById('genericModalCard');
+  card.innerHTML = html;
+  overlay.style.display = 'flex';
+}
+function ocultarModalGenerico(){
+  document.getElementById('genericModalOverlay').style.display = 'none';
+}
+document.getElementById('genericModalOverlay').addEventListener('click', (e)=>{
+  if(e.target.id === 'genericModalOverlay') ocultarModalGenerico();
+});
+
+/* =====================================================
    LOGIN SIMPLE (selección de nombre, sin contraseña)
 ===================================================== */
 
-// Actualiza el badge del header con el nombre/color del usuario actual.
+// Actualiza el badge del header con el nombre/color del usuario actual,
+// y muestra/oculta los botones exclusivos de administrador (Juan/Judith).
 function actualizarBadgeUsuario(){
   const badge = document.getElementById('currentUserBadge');
   const dot = document.getElementById('currentUserDot');
   const nombreEl = document.getElementById('currentUserNombre');
-  if(!badge || !dot || !nombreEl) return;
+  const btnImportar = document.getElementById('btnImportarExcel');
+  const btnDeshacer = document.getElementById('btnDeshacerImportacion');
 
   if(usuarioActual){
     badge.style.display = 'inline-flex';
@@ -1605,6 +1867,13 @@ function actualizarBadgeUsuario(){
     dot.style.background = color || '#ffffff';
   }else{
     badge.style.display = 'none';
+  }
+
+  const admin = esAdmin();
+  if(btnImportar) btnImportar.style.display = admin ? 'inline-flex' : 'none';
+  if(btnDeshacer){
+    btnDeshacer.style.display = admin ? 'inline-flex' : 'none';
+    if(admin) actualizarEstadoBotonDeshacer();
   }
 }
 
@@ -1645,7 +1914,7 @@ function confirmarLogin(){
   actualizarBadgeUsuario();
   cargarTemaUsuario(); // aplica el modo claro/oscuro guardado para este usuario
   ocultarModalLogin();
-  iniciarApp();
+  iniciarApp(true);
 }
 
 document.getElementById('loginBtn').addEventListener('click', confirmarLogin);
@@ -1655,23 +1924,13 @@ document.getElementById('btnCambiarUsuario').addEventListener('click', ()=>{
 
 /* =====================================================
    MODO OSCURO / CLARO (preferencia guardada por usuario)
-   Cada usuario tiene su propia clave en localStorage
-   ("revDoc_tema_<nombre>"), así que el modo elegido se
-   recuerda de forma independiente la próxima vez que esa
-   persona vuelva a identificarse en el mismo navegador.
 ===================================================== */
 const TEMA_STORAGE_PREFIX = 'revDoc_tema_';
 
-// Clave de localStorage para el tema del usuario dado (o un usuario
-// genérico "_sin_usuario" mientras nadie se ha identificado todavía).
 function claveTemaUsuario(){
   return TEMA_STORAGE_PREFIX + (usuarioActual || '_sin_usuario');
 }
 
-// Aplica el modo ('dark' o 'light') al documento: alterna la clase
-// body.dark-mode (de la que cuelgan todas las reglas CSS del tema
-// oscuro), actualiza el ícono del botón y redibuja las gráficas para
-// que tomen los colores de ejes/leyendas correctos del nuevo tema.
 function aplicarTema(modo){
   const oscuro = modo === 'dark';
   document.body.classList.toggle('dark-mode', oscuro);
@@ -1680,20 +1939,14 @@ function aplicarTema(modo){
     btn.textContent = oscuro ? '☀️' : '🌙';
     btn.title = oscuro ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro';
   }
-  // Las gráficas de Chart.js no heredan CSS: sus colores de texto/rejilla
-  // se definen en JS al crearlas, así que hay que volver a dibujarlas
-  // para que coincidan con el tema recién aplicado.
   renderCharts();
 }
 
-// Carga y aplica el tema guardado para el usuario actualmente
-// identificado (o "claro" por defecto si nunca lo cambió).
 function cargarTemaUsuario(){
   const guardado = localStorage.getItem(claveTemaUsuario());
   aplicarTema(guardado === 'dark' ? 'dark' : 'light');
 }
 
-// Alterna entre claro/oscuro y guarda la preferencia para el usuario actual.
 function alternarTema(){
   const nuevoModo = document.body.classList.contains('dark-mode') ? 'light' : 'dark';
   localStorage.setItem(claveTemaUsuario(), nuevoModo);
@@ -1705,8 +1958,6 @@ document.getElementById('btnToggleTema').addEventListener('click', alternarTema)
 /* =====================================================
    BARRA DE SCROLL HORIZONTAL FIJA (sincronizada)
 ===================================================== */
-
-// Devuelve el contenedor con scroll de la tabla que está visible actualmente.
 function getActiveTableWrap(){
   const activeBtn = document.querySelector('.tab-btn.active');
   const tab = activeBtn ? activeBtn.dataset.tab : 'docs';
@@ -1717,12 +1968,6 @@ function getActiveTableWrap(){
 
 let sincronizandoScroll = false;
 
-// Ajusta posición, ancho y contenido de la barra fija según la tabla
-// visible, y sincroniza su desplazamiento. La barra se alinea EXACTAMENTE
-// con el ancho visible del contenedor de la tabla (en vez de usar todo
-// el ancho de la ventana), para que su recorrido de scroll coincida 1:1
-// con el de la tabla y siempre se pueda llegar hasta el final (columna
-// "Faltantes" incluida).
 function actualizarBottomScrollbar(){
   requestAnimationFrame(()=>{
     const wrap = getActiveTableWrap();
@@ -1746,7 +1991,6 @@ function actualizarBottomScrollbar(){
   });
 }
 
-// Enlaza los eventos de scroll entre la barra fija y las tablas.
 function initScrollSync(){
   const bar = document.getElementById('bottomScrollbar');
   const wrapDocs = document.getElementById('tableWrapDocs');
@@ -1779,9 +2023,25 @@ function initScrollSync(){
 }
 
 /* =====================================================
-   RENDER: SELECTOR DE GRUPO
+   RENDER: SELECTOR DE GRUPO (con opción "Todos" + contador de OT)
 ===================================================== */
+
+// Devuelve cuántas OT tiene cada grupo (y el total general), a partir
+// del catálogo actual de state.items.
+function contarOTPorGrupo(){
+  const conteo = {};
+  GRUPOS.forEach(g=> conteo[g] = 0);
+  let total = 0;
+  state.items.forEach(item=>{
+    total++;
+    if(conteo[item.grupo] === undefined) conteo[item.grupo] = 0;
+    conteo[item.grupo]++;
+  });
+  return { conteo, total };
+}
+
 function poblarSelectGrupos(){
+  const { conteo, total } = contarOTPorGrupo();
   const selects = [
     document.getElementById('grupoSelectDocs'),
     document.getElementById('grupoSelectRevs'),
@@ -1790,10 +2050,16 @@ function poblarSelectGrupos(){
   selects.forEach(sel=>{
     if(!sel) return;
     sel.innerHTML = '';
+
+    const optTodos = document.createElement('option');
+    optTodos.value = GRUPO_TODOS;
+    optTodos.textContent = `Todos (${total})`;
+    sel.appendChild(optTodos);
+
     GRUPOS.forEach(g=>{
       const opt = document.createElement('option');
       opt.value = g;
-      opt.textContent = g;
+      opt.textContent = `${g} (${conteo[g]||0})`;
       sel.appendChild(opt);
     });
     sel.value = grupoActual;
@@ -1815,6 +2081,33 @@ function cambiarGrupo(nuevoGrupo){
   renderRevsBody(document.getElementById('searchRevs').value);
   renderManejoInterno(document.getElementById('searchManejo').value);
 }
+
+/* =====================================================
+   FILTROS RÁPIDOS (solo pestaña Documentos)
+===================================================== */
+function estadoFiltroOT(ot){
+  const arr = state.docs[ot];
+  const ok = arr.filter(v=>v.estado==='ok').length;
+  const bad = arr.filter(v=>v.estado==='bad').length;
+  if(ok === NUM_DOCS) return 'completos';
+  if(bad > 0) return 'faltantes';
+  if(ok === 0 && bad === 0) return 'sinrevisar';
+  return 'parcial';
+}
+
+function otPasaFiltroRapido(ot){
+  if(filtroRapidoActual === 'todos') return true;
+  return estadoFiltroOT(ot) === filtroRapidoActual;
+}
+
+document.querySelectorAll('#filtrosRapidosDocs .filtro-chip').forEach(chip=>{
+  chip.addEventListener('click', ()=>{
+    document.querySelectorAll('#filtrosRapidosDocs .filtro-chip').forEach(c=>c.classList.remove('active'));
+    chip.classList.add('active');
+    filtroRapidoActual = chip.dataset.filtro;
+    renderDocsBody(document.getElementById('searchDocs').value);
+  });
+});
 
 /* =====================================================
    RENDER: TABLERO DE DOCUMENTOS
@@ -1849,9 +2142,9 @@ function renderDocsBody(filter){
   body.innerHTML = '';
   const f = (filter||'').trim().toLowerCase();
 
-  state.items.forEach(item=>{
-    if(item.grupo !== grupoActual) return;
+  itemsDelGrupoActual().forEach(item=>{
     if(f && !(item.ot.toLowerCase().includes(f) || item.permiso.toLowerCase().includes(f))) return;
+    if(!otPasaFiltroRapido(item.ot)) return;
 
     const tr = document.createElement('tr');
 
@@ -1899,6 +2192,9 @@ function renderDocsBody(filter){
           docData.estado = (docData.estado==='bad') ? null : 'bad';
           docData.usuario = docData.estado ? (usuarioActual || null) : null;
           guardarEstado();
+          if(docData.estado==='bad'){
+            registrarActividad(`${usuarioActual||'Alguien'} puso tache en D${i+1} OT ${item.ot}`);
+          }
           renderDocsBody(document.getElementById('searchDocs').value);
           renderStats();
         } else {
@@ -1907,6 +2203,9 @@ function renderDocsBody(filter){
             docData.estado = (docData.estado==='ok') ? null : 'ok';
             docData.usuario = docData.estado ? (usuarioActual || null) : null;
             guardarEstado();
+            if(docData.estado==='ok'){
+              registrarActividad(`${usuarioActual||'Alguien'} marcó D${i+1} ✅ en OT ${item.ot}`);
+            }
             renderDocsBody(document.getElementById('searchDocs').value);
             renderStats();
             clickTimer = null;
@@ -1991,7 +2290,7 @@ function renderDocsBody(filter){
 }
 
 function renderStats(){
-  const itemsGrupo = state.items.filter(item=>item.grupo===grupoActual);
+  const itemsGrupo = itemsDelGrupoActual();
   const total = itemsGrupo.length;
   let completos = 0, conFaltantes = 0, sinRevisar = 0;
   itemsGrupo.forEach(item=>{
@@ -2010,33 +2309,15 @@ function renderStats(){
     <div class="stat-card"><div class="num" style="color:var(--texto-suave)">${sinRevisar}</div><div class="lbl">Sin revisar</div></div>
   `;
 
-  // Las gráficas dependen de los mismos datos (estado de documentos por
-  // OT del grupo actual), así que se recalculan cada vez que las
-  // estadísticas cambian -> se mantienen sincronizadas en tiempo real.
-  // Se usa setTimeout(0) para dejar que el navegador termine de aplicar
-  // los cambios de innerHTML de arriba antes de medir/dibujar el canvas.
   setTimeout(renderCharts, 0);
 }
 
 /* =====================================================
    RENDER: GRÁFICAS (Chart.js)
-   - chartCumplimiento: dona con el % de documentos ✅
-     sobre el total posible (OTs del grupo × 22).
-   - chartFaltantes: barras horizontales con el % de OTs
-     del grupo que tienen cada documento (D1–D22) marcado
-     como ❌, ordenadas de mayor a menor.
-   Ambas se DESTRUYEN Y RECREAN por completo cada vez que
-   se llama a renderCharts() (disparado desde renderStats()),
-   en vez de solo actualizar sus datos: es el patrón más
-   robusto para evitar canvas "fantasma" que quedan en blanco
-   por instancias de Chart.js en un estado inconsistente.
 ===================================================== */
 let chartCumplimientoInstance = null;
 let chartFaltantesInstance = null;
 
-// Devuelve la paleta de colores que deben usar los ejes, rejillas y
-// textos dibujados a mano dentro de las gráficas (Chart.js no lee estos
-// colores del CSS, así que hay que decidirlos en JS según el tema activo).
 function coloresGrafica(){
   const oscuro = document.body.classList.contains('dark-mode');
   return oscuro ? {
@@ -2056,7 +2337,6 @@ function coloresGrafica(){
   };
 }
 
-// Plugin personalizado para dibujar el porcentaje en el centro de la dona.
 const centerTextPlugin = {
   id: 'centerTextPlugin',
   afterDraw(chart){
@@ -2082,9 +2362,6 @@ const centerTextPlugin = {
   }
 };
 
-// Plugin personalizado para escribir el valor exacto ("12.5%") encima de
-// cada barra de la gráfica de faltantes, así se puede leer directamente
-// sin necesidad de pasar el mouse sobre la barra.
 const barValueLabelsPlugin = {
   id: 'barValueLabelsPlugin',
   afterDatasetsDraw(chart){
@@ -2102,20 +2379,12 @@ const barValueLabelsPlugin = {
     meta.data.forEach((bar, idx)=>{
       const valor = valores[idx] || 0;
       const texto = valor.toFixed(1).replace('.0','') + '%';
-      // 4px de separación por encima de la punta de la barra; si la barra
-      // está casi al tope (cerca de 100%), la etiqueta sube más para no
-      // quedar recortada contra el borde superior del canvas.
       ctx.fillText(texto, bar.x, bar.y - 4);
     });
     ctx.restore();
   }
 };
 
-// El registro de los plugins se hace de forma perezosa (la primera vez
-// que se necesitan) en vez de al cargar el script, porque si Chart.js
-// llegó a fallar al cargar (ver <head>) y luego se recupera vía el
-// fallback de jsDelivr, "window.Chart" podría no existir todavía en el
-// momento en que este <script> se ejecuta por primera vez.
 let pluginsRegistrados = false;
 function asegurarPluginRegistrado(){
   if(pluginsRegistrados) return;
@@ -2125,11 +2394,7 @@ function asegurarPluginRegistrado(){
   }
 }
 
-// Calcula y dibuja ambas gráficas para el grupo actualmente seleccionado.
 function renderCharts(){
-  // Si Chart.js todavía no ha terminado de cargar (p.ej. la primera
-  // vez que se llama, justo después de ocultarse el overlay de carga),
-  // se reintenta en un momento en vez de abortar silenciosamente.
   if(typeof window.Chart === 'undefined'){
     console.warn('[Gráficas] Chart.js aún no está disponible, reintentando en 200ms...');
     setTimeout(renderCharts, 200);
@@ -2139,7 +2404,7 @@ function renderCharts(){
 
   asegurarPluginRegistrado();
 
-  const itemsGrupo = state.items.filter(item=>item.grupo===grupoActual);
+  const itemsGrupo = itemsDelGrupoActual();
   const totalOT = itemsGrupo.length;
   const totalDocsPosibles = totalOT * NUM_DOCS;
 
@@ -2159,26 +2424,14 @@ function renderCharts(){
     ? Math.round((okCount / totalDocsPosibles) * 1000) / 10
     : 0;
 
-  // Log temporal de depuración: confirma que a las gráficas SÍ les están
-  // llegando datos reales (y no un arreglo vacío o todo en cero por un
-  // filtro de grupo mal aplicado, por ejemplo). Se puede quitar una vez
-  // confirmado que todo funciona.
   console.log('[Gráficas] grupo:', grupoActual, '| OT en el grupo:', totalOT,
     '| documentos ✅:', okCount, '| documentos ❌:', badCount,
     '| % cumplimiento:', pctCumplimiento);
 
-  // Se dibuja SIEMPRE, incluso si pctCumplimiento es 0 o si no hay
-  // ningún documento marcado como ❌ todavía (todas las barras en 0%):
-  // una gráfica en 0% sigue siendo información válida y debe verse.
   renderChartCumplimiento(pctCumplimiento);
   renderChartFaltantes(badPorDoc, totalOT);
 }
 
-// Fuerza a Chart.js a recalcular el tamaño del canvas contra su
-// contenedor actual. Es indispensable llamarlo después de que un
-// contenedor pase de "display:none" a visible (p.ej. al volver a la
-// pestaña Documentos), porque mientras el panel está oculto el canvas
-// mide 0x0 y Chart.js no siempre detecta el cambio de tamaño solo.
 function resizeCharts(){
   requestAnimationFrame(()=>{
     try{
@@ -2209,11 +2462,6 @@ function renderChartCumplimiento(pct){
     }]
   };
 
-  // Destruye por completo cualquier instancia previa antes de crear una
-  // nueva. Es más costoso que solo llamar a .update(), pero elimina de
-  // raíz cualquier problema de un canvas que quedó en un estado
-  // inconsistente (tamaño 0 en el momento de crearse, contexto perdido,
-  // etc.) y es la forma más robusta de garantizar que siempre se dibuje.
   if(chartCumplimientoInstance){
     chartCumplimientoInstance.destroy();
     chartCumplimientoInstance = null;
@@ -2252,9 +2500,6 @@ function renderChartFaltantes(badPorDoc, totalOT){
     return;
   }
 
-  // Construye la lista de documentos con su % de taches y ordena
-  // de mayor a menor. Se dibuja siempre, aunque todos los valores
-  // sean 0 (todas las barras al 0% son información válida).
   const items = badPorDoc.map((count, idx)=>({
     label: 'D' + (idx + 1),
     pct: totalOT > 0 ? Math.round((count / totalOT) * 1000) / 10 : 0
@@ -2275,8 +2520,6 @@ function renderChartFaltantes(badPorDoc, totalOT){
     }]
   };
 
-  // Igual que en la dona: se destruye cualquier instancia previa antes
-  // de crear una nueva, en vez de intentar reutilizarla con .update().
   if(chartFaltantesInstance){
     chartFaltantesInstance.destroy();
     chartFaltantesInstance = null;
@@ -2289,17 +2532,10 @@ function renderChartFaltantes(badPorDoc, totalOT){
       type: 'bar',
       data,
       options: {
-        // Sin "indexAxis: 'y'" (o con indexAxis: 'x', que es el valor
-        // por defecto), las barras se dibujan verticales: la categoría
-        // (cada documento D1..D22) queda en el eje X y el valor
-        // (porcentaje de faltantes) en el eje Y.
         indexAxis: 'x',
         responsive: true,
         maintainAspectRatio: false,
         animation: { duration: 300 },
-        // Espacio extra arriba del área de dibujo para que la etiqueta
-        // de porcentaje de las barras más altas (cercanas al 100%) no
-        // quede recortada contra el borde superior del canvas.
         layout: { padding: { top: 18 } },
         scales: {
           x: {
@@ -2336,13 +2572,9 @@ function renderChartFaltantes(badPorDoc, totalOT){
 /* =====================================================
    RENDER: TABLERO DE REVISIONES (individuales por OT)
 ===================================================== */
-
-// Número de columnas a mostrar = la mayor cantidad de revisiones entre
-// las OT del grupo actualmente seleccionado.
 function calcularColumnasRevisiones(){
   let max = 1;
-  state.items.forEach(item=>{
-    if(item.grupo !== grupoActual) return;
+  itemsDelGrupoActual().forEach(item=>{
     const len = state.revs[item.ot].length;
     if(len > max) max = len;
   });
@@ -2406,8 +2638,7 @@ function renderRevsBody(filter){
   const f = (filter||'').trim().toLowerCase();
   const columnas = calcularColumnasRevisiones();
 
-  state.items.forEach(item=>{
-    if(item.grupo !== grupoActual) return;
+  itemsDelGrupoActual().forEach(item=>{
     if(f && !(item.ot.toLowerCase().includes(f) || item.permiso.toLowerCase().includes(f))) return;
 
     const tr = document.createElement('tr');
@@ -2444,7 +2675,6 @@ function renderRevsBody(filter){
 
         btn.addEventListener('click', ()=>{
           revData.checked = !revData.checked;
-          // Al marcar, la fecha se llena automáticamente con hoy; al desmarcar, se limpia.
           if(revData.checked){
             revData.fecha = fechaHoy();
           }else{
@@ -2452,8 +2682,6 @@ function renderRevsBody(filter){
           }
           guardarEstado();
           renderRevsBody(document.getElementById('searchRevs').value);
-          // Si esta era la última revisión posible de la OT (revsOT.length === maxRevisiones),
-          // al marcarla/desmarcarla la OT entra o sale automáticamente de "Manejo Interno".
           renderManejoInterno(document.getElementById('searchManejo').value);
         });
 
@@ -2475,7 +2703,6 @@ function renderRevsBody(filter){
       tr.appendChild(td);
     }
 
-    // Columna de acciones: agregar / quitar revisión para esta OT específica
     const tdAcciones = document.createElement('td');
     const accWrap = document.createElement('div');
     accWrap.className = 'rev-actions-wrap';
@@ -2512,11 +2739,6 @@ function renderRevsBody(filter){
 
 /* =====================================================
    RENDER: TABLERO DE MANEJO INTERNO
-   Una OT aparece aquí automáticamente cuando alcanzó su
-   número máximo de revisiones configurado (state.maxRevisiones)
-   y la última de ellas está marcada como completada (✅).
-   Se calcula siempre a partir del estado actual, así que se
-   mantiene sincronizado sin necesidad de guardar una lista aparte.
 ===================================================== */
 function estaListaParaManejoInterno(ot){
   const revsOT = state.revs[ot];
@@ -2530,8 +2752,7 @@ function renderManejoInterno(filter){
   body.innerHTML = '';
   const f = (filter||'').trim().toLowerCase();
 
-  const itemsListos = state.items.filter(item=>{
-    if(item.grupo !== grupoActual) return false;
+  const itemsListos = itemsDelGrupoActual().filter(item=>{
     if(f && !(item.ot.toLowerCase().includes(f) || item.permiso.toLowerCase().includes(f))) return false;
     return estaListaParaManejoInterno(item.ot);
   });
@@ -2587,11 +2808,6 @@ document.querySelectorAll('.tab-btn').forEach(btn=>{
       renderManejoInterno(document.getElementById('searchManejo').value);
     }
     if(tab==='docs'){
-      // Al volver a la pestaña de documentos, refresca los datos de las
-      // gráficas y además fuerza un resize: mientras el panel estaba
-      // oculto (display:none) el canvas medía 0x0, así que Chart.js
-      // necesita que se le indique explícitamente que vuelva a medir
-      // su contenedor para dibujar correctamente.
       renderCharts();
       resizeCharts();
     }
@@ -2659,7 +2875,7 @@ document.getElementById('btnExportPNG').addEventListener('click', ()=>{
 ===================================================== */
 document.getElementById('btnExportXLSX').addEventListener('click', ()=>{
   const wb = XLSX.utils.book_new();
-  const itemsGrupo = state.items.filter(item=>item.grupo===grupoActual);
+  const itemsGrupo = itemsDelGrupoActual();
 
   // Hoja Documentos
   const docsRows = [];
@@ -2725,19 +2941,81 @@ document.getElementById('btnExportXLSX').addEventListener('click', ()=>{
 });
 
 /* =====================================================
+   DESCARGAR PLANTILLA DE EXCEL
+===================================================== */
+document.getElementById('btnPlantillaExcel').addEventListener('click', ()=>{
+  const wb = XLSX.utils.book_new();
+  const rows = [
+    ['Grupo','OT','Permiso'],
+    ['PETROMAX','999','PL/99999/EXP/ES/2025'],
+    ['PEMEX','1000','PL/10000/EXP/ES/2025'],
+    ['LABORATORIO','1001','PL/10001/EXP/ES/2025']
+  ];
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  XLSX.utils.book_append_sheet(wb, ws, 'Plantilla');
+  XLSX.writeFile(wb, 'plantilla_revision_documental.xlsx');
+});
+
+/* =====================================================
+   EXPORTAR PDF DEL GRUPO
+===================================================== */
+document.getElementById('btnExportPDF').addEventListener('click', ()=>{
+  if(!window.jspdf || !window.jspdf.jsPDF){
+    mostrarAlerta('No se pudo cargar la librería de PDF. Verifica tu conexión e intenta de nuevo.');
+    return;
+  }
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation:'landscape', unit:'pt', format:'letter' });
+  const itemsGrupo = itemsDelGrupoActual();
+  const nombreGrupo = grupoActual === GRUPO_TODOS ? 'Todos' : grupoActual;
+  const fechaStr = fechaHoy();
+
+  doc.setFontSize(14);
+  doc.text('Revisión Documental · Grupo: ' + nombreGrupo, 40, 40);
+  doc.setFontSize(9);
+  doc.text('Generado: ' + fechaStr, 40, 56);
+
+  const filas = itemsGrupo.map(item=>{
+    const { listos, faltantes } = calcListosFaltantes(item.ot);
+    const revsOT = state.revs[item.ot] || [];
+    const revsHechas = revsOT.filter(r=>r.checked).length;
+    return [
+      item.ot,
+      item.permiso,
+      listos.length + '/' + NUM_DOCS,
+      faltantes.length,
+      revsHechas + '/' + revsOT.length,
+      estaListaParaManejoInterno(item.ot) ? 'Sí' : 'No'
+    ];
+  });
+
+  if(doc.autoTable){
+    doc.autoTable({
+      startY: 70,
+      head: [['OT','Permiso','Listos','Faltantes','Revisiones','Manejo Interno']],
+      body: filas,
+      styles: { fontSize:8 },
+      headStyles: { fillColor:[31,111,117] }
+    });
+  }else{
+    // Respaldo simple si el plugin autoTable no está disponible: texto plano.
+    let y = 80;
+    doc.setFontSize(8);
+    filas.forEach(f=>{
+      doc.text(f.join(' | '), 40, y);
+      y += 14;
+      if(y > 560){ doc.addPage(); y = 40; }
+    });
+  }
+
+  doc.save('revision_documental_' + nombreGrupo + '_' + fechaStr + '.pdf');
+});
+
+/* =====================================================
    IMPORTAR LISTA DESDE EXCEL (.xlsx / .xls)
    Formato esperado (primera fila = encabezados, sin importar
    mayúsculas/minúsculas): Grupo | OT | Permiso
-   - OT existente: se actualiza permiso/grupo, se CONSERVAN
-     docs (checks/comentarios) y revs (revisiones) tal cual.
-   - OT nueva: se agrega con docs vacíos (22 sin marcar) y
-     1 revisión vacía.
-   - OTs que ya no vienen en el Excel: NO se borran (se
-     conservan para no perder historial).
 ===================================================== */
-
-// Busca, de forma case-insensitive, el índice de una columna cuyo
-// encabezado coincida con alguno de los nombres esperados.
 function encontrarIndiceColumna(headerRow, nombresPosibles){
   for(let i=0;i<headerRow.length;i++){
     const val = String(headerRow[i] || '').trim().toLowerCase();
@@ -2746,8 +3024,6 @@ function encontrarIndiceColumna(headerRow, nombresPosibles){
   return -1;
 }
 
-// Procesa las filas crudas del Excel (array de arrays) y devuelve
-// { filas: [{grupo,ot,permiso}], error: 'mensaje' | null }
 function procesarFilasExcel(rows){
   if(!rows || !rows.length){
     return { filas: [], error: 'El archivo está vacío o no se pudo leer.' };
@@ -2772,11 +3048,10 @@ function procesarFilasExcel(rows){
     const permisoRaw = fila[idxPermiso];
 
     const grupo = String(grupoRaw !== undefined && grupoRaw !== null ? grupoRaw : '').trim();
-    // Normaliza la OT como texto (por si Excel la interpretó como número).
     const ot = String(otRaw !== undefined && otRaw !== null ? otRaw : '').trim();
     const permiso = String(permisoRaw !== undefined && permisoRaw !== null ? permisoRaw : '').trim();
 
-    if(!grupo || !ot || !permiso) continue; // fila incompleta, se ignora
+    if(!grupo || !ot || !permiso) continue;
 
     filas.push({ grupo, ot, permiso });
   }
@@ -2788,12 +3063,39 @@ function procesarFilasExcel(rows){
   return { filas, error: null };
 }
 
+// Compara las filas del Excel contra el estado actual y arma un resumen
+// SIN aplicar ningún cambio todavía (para la vista previa).
+function calcularResumenImportacion(filas){
+  const itemsPorOt = new Map();
+  state.items.forEach(item=> itemsPorOt.set(item.ot, item));
+
+  let nuevas = 0;
+  let actualizadas = 0;
+  const gruposVistos = new Set();
+
+  filas.forEach(fila=>{
+    gruposVistos.add(fila.grupo);
+    const existente = itemsPorOt.get(fila.ot);
+    if(existente){
+      if(existente.permiso !== fila.permiso || existente.grupo !== fila.grupo){
+        actualizadas++;
+      }
+    }else{
+      nuevas++;
+    }
+  });
+
+  return { nuevas, actualizadas, totalGrupos: gruposVistos.size, totalFilas: filas.length };
+}
+
 // Aplica las filas importadas sobre state: actualiza OTs existentes,
 // agrega OTs nuevas, y NUNCA borra docs/revs de una OT existente.
+// Devuelve además la lista de OT NUEVAS agregadas (para poder deshacer).
 function aplicarImportacionExcel(filas){
   const gruposVistos = new Set();
   const itemsPorOt = new Map();
   state.items.forEach(item=> itemsPorOt.set(item.ot, item));
+  const otsNuevas = [];
 
   filas.forEach(fila=>{
     gruposVistos.add(fila.grupo);
@@ -2810,18 +3112,31 @@ function aplicarImportacionExcel(filas){
       itemsPorOt.set(fila.ot, nuevoItem);
       state.docs[fila.ot] = Array.from({length:NUM_DOCS}, ()=>({ estado:null, comentario:'', usuario:null }));
       state.revs[fila.ot] = [ { checked:false, fecha:'' } ];
+      otsNuevas.push(fila.ot);
     }
   });
+
+  // Guarda snapshot de la última importación (solo las OT nuevas) para
+  // poder deshacerla después. No afecta OTs que ya existían.
+  state.ultimaImportacion = {
+    otsNuevas,
+    fecha: fechaHoraLegible(),
+    usuario: usuarioActual || '—',
+    totalOT: filas.length,
+    totalGrupos: gruposVistos.size
+  };
 
   return { totalOT: filas.length, totalGrupos: gruposVistos.size };
 }
 
-// Maneja el archivo seleccionado: lo lee, valida, aplica y refresca la UI.
+// Archivo temporalmente leído (esperando confirmación en el modal de vista previa).
+let importacionPendiente = null;
+
 function manejarArchivoImportado(file){
   const btn = document.getElementById('btnImportarExcel');
   const textoOriginal = btn.textContent;
   btn.disabled = true;
-  btn.textContent = '⏳ Importando...';
+  btn.textContent = '⏳ Leyendo...';
 
   const restaurarBoton = ()=>{
     btn.disabled = false;
@@ -2853,15 +3168,12 @@ function manejarArchivoImportado(file){
         return;
       }
 
-      const { totalOT, totalGrupos } = aplicarImportacionExcel(filas);
-
-      recalcularGrupos();
-      guardarEstado(true);
-      poblarSelectGrupos();
-      renderAll();
+      // En vez de aplicar directamente, se muestra una vista previa y se
+      // espera confirmación del usuario.
+      importacionPendiente = filas;
+      const resumen = calcularResumenImportacion(filas);
       restaurarBoton();
-
-      mostrarAlerta('Lista importada: ' + totalOT + ' OT, ' + totalGrupos + ' grupos.');
+      mostrarVistaPreviaImportacion(resumen);
     }catch(err){
       console.error('Error importando Excel:', err);
       restaurarBoton();
@@ -2869,6 +3181,46 @@ function manejarArchivoImportado(file){
     }
   };
   reader.readAsArrayBuffer(file);
+}
+
+// Muestra el modal de vista previa con el resumen de lo que se va a
+// importar, antes de tocar Firebase o el estado local.
+function mostrarVistaPreviaImportacion(resumen){
+  const html = `
+    <h2>📥 Vista previa de importación</h2>
+    <div class="resumen-linea"><span>OT nuevas</span><b>${resumen.nuevas}</b></div>
+    <div class="resumen-linea"><span>OT existentes que se actualizarán</span><b>${resumen.actualizadas}</b></div>
+    <div class="resumen-linea"><span>Grupos detectados</span><b>${resumen.totalGrupos}</b></div>
+    <div class="resumen-linea"><span>Total de filas leídas</span><b>${resumen.totalFilas}</b></div>
+    <div class="generic-modal-actions">
+      <button class="btn btn-blanco" id="btnCancelarImportacion">Cancelar</button>
+      <button class="btn btn-verde" id="btnConfirmarImportacion">Confirmar importación</button>
+    </div>
+  `;
+  mostrarModalGenerico(html);
+  document.getElementById('btnCancelarImportacion').addEventListener('click', ()=>{
+    importacionPendiente = null;
+    ocultarModalGenerico();
+  });
+  document.getElementById('btnConfirmarImportacion').addEventListener('click', confirmarImportacionPendiente);
+}
+
+function confirmarImportacionPendiente(){
+  if(!importacionPendiente){ ocultarModalGenerico(); return; }
+  const filas = importacionPendiente;
+  importacionPendiente = null;
+  ocultarModalGenerico();
+
+  const { totalOT, totalGrupos } = aplicarImportacionExcel(filas);
+
+  recalcularGrupos();
+  registrarActividad(`${usuarioActual||'Alguien'} importó lista (${state.ultimaImportacion ? state.ultimaImportacion.otsNuevas.length : 0} OT nuevas)`);
+  guardarEstado(true);
+  poblarSelectGrupos();
+  renderAll();
+  actualizarEstadoBotonDeshacer();
+
+  mostrarExito('Lista importada: ' + totalOT + ' OT, ' + totalGrupos + ' grupos.', 'Importación completada');
 }
 
 document.getElementById('btnImportarExcel').addEventListener('click', ()=>{
@@ -2882,33 +3234,117 @@ document.getElementById('inputImportarExcel').addEventListener('change', (e)=>{
 });
 
 /* =====================================================
+   DESHACER ÚLTIMA IMPORTACIÓN (solo Juan y Judith)
+===================================================== */
+function actualizarEstadoBotonDeshacer(){
+  const btn = document.getElementById('btnDeshacerImportacion');
+  if(!btn) return;
+  const hayAlgoQueDeshacer = !!(state && state.ultimaImportacion && Array.isArray(state.ultimaImportacion.otsNuevas) && state.ultimaImportacion.otsNuevas.length);
+  btn.disabled = !hayAlgoQueDeshacer;
+  btn.title = hayAlgoQueDeshacer
+    ? 'Quita las ' + state.ultimaImportacion.otsNuevas.length + ' OT agregadas en la última importación'
+    : 'No hay ninguna importación reciente que deshacer';
+}
+
+function deshacerUltimaImportacion(){
+  if(!esAdmin()) return;
+  if(!state || !state.ultimaImportacion || !Array.isArray(state.ultimaImportacion.otsNuevas) || !state.ultimaImportacion.otsNuevas.length){
+    mostrarAlerta('No hay ninguna importación reciente que deshacer.');
+    return;
+  }
+  const otsNuevas = state.ultimaImportacion.otsNuevas;
+  if(!confirm('¿Deshacer la última importación? Se quitarán ' + otsNuevas.length + ' OT nuevas agregadas por esa importación. Las OT que ya existían antes no se verán afectadas.')) return;
+
+  const setOts = new Set(otsNuevas);
+  state.items = state.items.filter(item=> !setOts.has(item.ot));
+  otsNuevas.forEach(ot=>{
+    delete state.docs[ot];
+    delete state.revs[ot];
+  });
+
+  registrarActividad(`${usuarioActual||'Alguien'} deshizo la última importación (${otsNuevas.length} OT eliminadas)`);
+  state.ultimaImportacion = null;
+
+  recalcularGrupos();
+  guardarEstado(true);
+  poblarSelectGrupos();
+  renderAll();
+  actualizarEstadoBotonDeshacer();
+  mostrarExito('Se quitaron ' + otsNuevas.length + ' OT de la última importación.', 'Importación deshecha');
+}
+
+document.getElementById('btnDeshacerImportacion').addEventListener('click', deshacerUltimaImportacion);
+
+/* =====================================================
+   RESUMEN AL ENTRAR
+===================================================== */
+function mostrarResumenAlEntrar(){
+  const itemsGrupo = itemsDelGrupoActual();
+  const total = itemsGrupo.length;
+  let completos = 0, conFaltantes = 0, sinRevisar = 0, listasManejo = 0;
+  itemsGrupo.forEach(item=>{
+    const arr = state.docs[item.ot];
+    const ok = arr.filter(v=>v.estado==='ok').length;
+    const bad = arr.filter(v=>v.estado==='bad').length;
+    if(ok === NUM_DOCS) completos++;
+    else if(bad>0) conFaltantes++;
+    if(ok===0 && bad===0) sinRevisar++;
+    if(estaListaParaManejoInterno(item.ot)) listasManejo++;
+  });
+
+  const ultimaActividad = (state.log||[]).slice(0,3);
+  const actividadHtml = ultimaActividad.length
+    ? ultimaActividad.map(e=>`<div style="font-size:11.5px;color:var(--texto-suave);margin-bottom:4px;">• ${e.texto} <span style="opacity:.7">(${e.fecha})</span></div>`).join('')
+    : '<div style="font-size:11.5px;color:var(--texto-suave);">Sin actividad reciente.</div>';
+
+  const html = `
+    <h2>👋 Resumen general</h2>
+    <div class="resumen-linea"><span>Total de OT</span><b>${total}</b></div>
+    <div class="resumen-linea"><span>Expedientes completos</span><b style="color:var(--verde)">${completos}</b></div>
+    <div class="resumen-linea"><span>Con faltantes</span><b style="color:var(--rojo)">${conFaltantes}</b></div>
+    <div class="resumen-linea"><span>Sin revisar</span><b>${sinRevisar}</b></div>
+    <div class="resumen-linea"><span>Listas para Manejo Interno</span><b>${listasManejo}</b></div>
+    <div style="margin-top:14px;">
+      <div style="font-size:12px;font-weight:700;color:var(--azul-oscuro);margin-bottom:6px;">Última actividad</div>
+      ${actividadHtml}
+    </div>
+    <div class="generic-modal-actions">
+      <button class="btn btn-verde" id="btnCerrarResumen">Entendido</button>
+    </div>
+  `;
+  mostrarModalGenerico(html);
+  document.getElementById('btnCerrarResumen').addEventListener('click', ocultarModalGenerico);
+}
+
+/* =====================================================
    INIT
 ===================================================== */
 function renderAll(){
   poblarSelectGrupos();
   renderDocsHead();
-  renderDocsBody('');
+  renderDocsBody(document.getElementById('searchDocs') ? document.getElementById('searchDocs').value : '');
   renderStats();
   renderRevsHead();
-  renderRevsBody('');
-  renderManejoInterno('');
+  renderRevsBody(document.getElementById('searchRevs') ? document.getElementById('searchRevs').value : '');
+  renderManejoInterno(document.getElementById('searchManejo') ? document.getElementById('searchManejo').value : '');
   document.getElementById('maxRevInput').value = state.maxRevisiones;
+  renderActivityPanel();
 }
 
 // Inicializa la app (carga Firebase + primer render). Solo se llama
 // una vez que el usuario ya está identificado (login resuelto).
-async function iniciarApp(){
+// mostrarResumen=true cuando viene justo después de un login explícito.
+async function iniciarApp(mostrarResumen){
   await cargarEstado();
   renderAll();
+  actualizarBadgeUsuario();
   initScrollSync();
   actualizarBottomScrollbar();
-  // Pasada defensiva: justo después de la carga inicial, algunos
-  // navegadores todavía no han terminado de calcular el layout final
-  // (fuentes, reflow del overlay de carga que acaba de ocultarse, etc.),
-  // así que se fuerza un resize adicional de las gráficas en el
-  // siguiente frame para garantizar que se dibujen con el tamaño correcto.
   resizeCharts();
   window.addEventListener('load', resizeCharts);
+  if(mostrarResumen){
+    setTimeout(mostrarResumenAlEntrar, 250);
+  }
 }
 
 (function iniciar(){
@@ -2917,7 +3353,7 @@ async function iniciarApp(){
   if(usuarioActual){
     // Ya había un usuario guardado en este navegador: se salta el login.
     document.getElementById('loadingOverlay').style.display = 'flex';
-    iniciarApp();
+    iniciarApp(true);
   }else{
     // No hay usuario identificado: se pide el login antes de cargar datos.
     document.getElementById('loadingOverlay').style.display = 'none';
