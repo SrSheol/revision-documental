@@ -863,6 +863,8 @@
     <button class="btn-cambiar-usuario" id="btnCambiarUsuario">Cambiar usuario</button>
     <button class="btn-tema" id="btnToggleTema" title="Cambiar modo claro/oscuro">🌙</button>
     <span class="save-status" id="saveStatus">✓ Sincronizado</span>
+    <input type="file" id="inputImportarExcel" accept=".xlsx,.xls" style="display:none;">
+    <button class="btn btn-verde" id="btnImportarExcel">📥 Importar lista (Excel)</button>
     <button class="btn btn-amarillo" id="btnExportPNG">🖼 PNG</button>
     <button class="btn btn-blanco" id="btnExportXLSX">📊 Excel</button>
   </div>
@@ -1328,10 +1330,11 @@ const DATA_INICIAL = [
   { ot: "342", permiso: "PL/19249/DIS/OM/2016" }
 ];
 
-// Catálogo de grupos disponibles. Preparado para agregar más grupos en
-// el futuro: 1) agrega el nombre a GRUPOS, 2) en los nuevos objetos de
-// OT que agregues a DATA_INICIAL, define item.grupo = "NOMBRE_GRUPO".
-const GRUPOS = ["PETROMAX"];
+// Catálogo de grupos disponibles. Se recalcula dinámicamente a partir de
+// los grupos presentes en DATA_INICIAL (y de los que se importen luego
+// desde Excel), así que ya no es necesario editar esta lista a mano al
+// agregar un grupo nuevo.
+let GRUPOS = [];
 
 // Todas las OT del catálogo actual pertenecen al grupo "PETROMAX" por
 // defecto, si no se especifica otro grupo explícitamente en el objeto.
@@ -1343,7 +1346,26 @@ const NUM_DOCS = 22;
 const DEFAULT_MAX_REVISIONES = 5;
 
 let state = null;
-let grupoActual = GRUPOS[0];
+let grupoActual = null;
+
+/* =====================================================
+   GRUPOS: recálculo dinámico + orden alfabético (es)
+===================================================== */
+
+// Reconstruye GRUPOS a partir de los grupos únicos presentes en
+// state.items, ordenados alfabéticamente con las reglas del español
+// (así "Á", "É", "Ñ", etc. se ordenan de forma natural).
+function recalcularGrupos(){
+  const unicos = new Set();
+  (state ? state.items : DATA_INICIAL).forEach(item=>{
+    if(item.grupo) unicos.add(item.grupo);
+  });
+  GRUPOS = Array.from(unicos).sort((a,b)=> a.localeCompare(b, 'es', { sensitivity:'base' }));
+  if(!GRUPOS.length) GRUPOS = ['PETROMAX'];
+  if(!grupoActual || !GRUPOS.includes(grupoActual)){
+    grupoActual = GRUPOS[0];
+  }
+}
 
 /* =====================================================
    ESTADO: creación / fusión / persistencia (Firebase)
@@ -1376,8 +1398,15 @@ function fusionarEstado(remoto){
     return base;
   }
 
+  // La lista de items ahora puede venir del remoto (por ejemplo, después
+  // de una importación desde Excel), así que se usa la remota si existe
+  // y tiene al menos un elemento; si no, se usa el catálogo local.
+  const itemsBase = (Array.isArray(remoto.items) && remoto.items.length)
+    ? remoto.items.map(it=>({ ot: String(it.ot), permiso: it.permiso || '', grupo: it.grupo || 'PETROMAX' }))
+    : base.items;
+
   const resultado = {
-    items: base.items,
+    items: itemsBase,
     docs: {},
     revs: {},
     maxRevisiones: (typeof remoto.maxRevisiones === 'number' && remoto.maxRevisiones >= 1)
@@ -1385,7 +1414,7 @@ function fusionarEstado(remoto){
       : DEFAULT_MAX_REVISIONES
   };
 
-  DATA_INICIAL.forEach(item=>{
+  itemsBase.forEach(item=>{
     // Documentos
     const docsRemotos = remoto.docs && remoto.docs[item.ot];
     if(Array.isArray(docsRemotos) && docsRemotos.length){
@@ -1400,7 +1429,7 @@ function fusionarEstado(remoto){
       }
       resultado.docs[item.ot] = arr;
     }else{
-      resultado.docs[item.ot] = base.docs[item.ot];
+      resultado.docs[item.ot] = Array.from({length:NUM_DOCS}, ()=>({ estado: null, comentario: '', usuario: null }));
     }
 
     // Revisiones (longitud individual por OT)
@@ -1411,7 +1440,7 @@ function fusionarEstado(remoto){
         fecha: (r && r.fecha) || ''
       }));
     }else{
-      resultado.revs[item.ot] = base.revs[item.ot];
+      resultado.revs[item.ot] = [ { checked:false, fecha:'' } ];
     }
   });
 
@@ -1467,6 +1496,7 @@ async function cargarEstado(){
     console.error('Error cargando desde Firebase:', err);
     state = estadoVacio();
   }
+  recalcularGrupos();
   if(overlay) overlay.style.display = 'none';
 }
 
@@ -2692,6 +2722,163 @@ document.getElementById('btnExportXLSX').addEventListener('click', ()=>{
   XLSX.utils.book_append_sheet(wb, wsManejo, 'Manejo Interno');
 
   XLSX.writeFile(wb, 'revision_documental_'+grupoActual+'.xlsx');
+});
+
+/* =====================================================
+   IMPORTAR LISTA DESDE EXCEL (.xlsx / .xls)
+   Formato esperado (primera fila = encabezados, sin importar
+   mayúsculas/minúsculas): Grupo | OT | Permiso
+   - OT existente: se actualiza permiso/grupo, se CONSERVAN
+     docs (checks/comentarios) y revs (revisiones) tal cual.
+   - OT nueva: se agrega con docs vacíos (22 sin marcar) y
+     1 revisión vacía.
+   - OTs que ya no vienen en el Excel: NO se borran (se
+     conservan para no perder historial).
+===================================================== */
+
+// Busca, de forma case-insensitive, el índice de una columna cuyo
+// encabezado coincida con alguno de los nombres esperados.
+function encontrarIndiceColumna(headerRow, nombresPosibles){
+  for(let i=0;i<headerRow.length;i++){
+    const val = String(headerRow[i] || '').trim().toLowerCase();
+    if(nombresPosibles.includes(val)) return i;
+  }
+  return -1;
+}
+
+// Procesa las filas crudas del Excel (array de arrays) y devuelve
+// { filas: [{grupo,ot,permiso}], error: 'mensaje' | null }
+function procesarFilasExcel(rows){
+  if(!rows || !rows.length){
+    return { filas: [], error: 'El archivo está vacío o no se pudo leer.' };
+  }
+
+  const header = rows[0];
+  const idxGrupo = encontrarIndiceColumna(header, ['grupo']);
+  const idxOt = encontrarIndiceColumna(header, ['ot']);
+  const idxPermiso = encontrarIndiceColumna(header, ['permiso', 'permiso cre/cne', 'permiso cre', 'permiso cne']);
+
+  if(idxGrupo === -1 || idxOt === -1 || idxPermiso === -1){
+    return { filas: [], error: 'El Excel debe tener las columnas "Grupo", "OT" y "Permiso" en la primera fila.' };
+  }
+
+  const filas = [];
+  for(let r=1;r<rows.length;r++){
+    const fila = rows[r];
+    if(!fila) continue;
+
+    const grupoRaw = fila[idxGrupo];
+    const otRaw = fila[idxOt];
+    const permisoRaw = fila[idxPermiso];
+
+    const grupo = String(grupoRaw !== undefined && grupoRaw !== null ? grupoRaw : '').trim();
+    // Normaliza la OT como texto (por si Excel la interpretó como número).
+    const ot = String(otRaw !== undefined && otRaw !== null ? otRaw : '').trim();
+    const permiso = String(permisoRaw !== undefined && permisoRaw !== null ? permisoRaw : '').trim();
+
+    if(!grupo || !ot || !permiso) continue; // fila incompleta, se ignora
+
+    filas.push({ grupo, ot, permiso });
+  }
+
+  if(!filas.length){
+    return { filas: [], error: 'No se encontraron filas válidas con Grupo, OT y Permiso.' };
+  }
+
+  return { filas, error: null };
+}
+
+// Aplica las filas importadas sobre state: actualiza OTs existentes,
+// agrega OTs nuevas, y NUNCA borra docs/revs de una OT existente.
+function aplicarImportacionExcel(filas){
+  const gruposVistos = new Set();
+  const itemsPorOt = new Map();
+  state.items.forEach(item=> itemsPorOt.set(item.ot, item));
+
+  filas.forEach(fila=>{
+    gruposVistos.add(fila.grupo);
+    const existente = itemsPorOt.get(fila.ot);
+
+    if(existente){
+      // OT ya existe: se actualizan permiso y grupo, se conservan docs/revs.
+      existente.permiso = fila.permiso;
+      existente.grupo = fila.grupo;
+    }else{
+      // OT nueva: se agrega al catálogo y se inicializan sus datos.
+      const nuevoItem = { ot: fila.ot, permiso: fila.permiso, grupo: fila.grupo };
+      state.items.push(nuevoItem);
+      itemsPorOt.set(fila.ot, nuevoItem);
+      state.docs[fila.ot] = Array.from({length:NUM_DOCS}, ()=>({ estado:null, comentario:'', usuario:null }));
+      state.revs[fila.ot] = [ { checked:false, fecha:'' } ];
+    }
+  });
+
+  return { totalOT: filas.length, totalGrupos: gruposVistos.size };
+}
+
+// Maneja el archivo seleccionado: lo lee, valida, aplica y refresca la UI.
+function manejarArchivoImportado(file){
+  const btn = document.getElementById('btnImportarExcel');
+  const textoOriginal = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = '⏳ Importando...';
+
+  const restaurarBoton = ()=>{
+    btn.disabled = false;
+    btn.textContent = textoOriginal;
+  };
+
+  const reader = new FileReader();
+  reader.onerror = ()=>{
+    restaurarBoton();
+    mostrarAlerta('No se pudo leer el archivo. Intenta de nuevo.');
+  };
+  reader.onload = (e)=>{
+    try{
+      const data = new Uint8Array(e.target.result);
+      const wb = XLSX.read(data, { type:'array' });
+      const primeraHoja = wb.SheetNames[0];
+      if(!primeraHoja){
+        restaurarBoton();
+        mostrarAlerta('El archivo Excel no tiene hojas con datos.');
+        return;
+      }
+      const ws = wb.Sheets[primeraHoja];
+      const rows = XLSX.utils.sheet_to_json(ws, { header:1, raw:true, defval:'' });
+
+      const { filas, error } = procesarFilasExcel(rows);
+      if(error){
+        restaurarBoton();
+        mostrarAlerta(error);
+        return;
+      }
+
+      const { totalOT, totalGrupos } = aplicarImportacionExcel(filas);
+
+      recalcularGrupos();
+      guardarEstado(true);
+      poblarSelectGrupos();
+      renderAll();
+      restaurarBoton();
+
+      mostrarAlerta('Lista importada: ' + totalOT + ' OT, ' + totalGrupos + ' grupos.');
+    }catch(err){
+      console.error('Error importando Excel:', err);
+      restaurarBoton();
+      mostrarAlerta('Ocurrió un error al procesar el archivo. Verifica que sea un Excel válido (.xlsx/.xls).');
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+document.getElementById('btnImportarExcel').addEventListener('click', ()=>{
+  document.getElementById('inputImportarExcel').click();
+});
+document.getElementById('inputImportarExcel').addEventListener('change', (e)=>{
+  const file = e.target.files && e.target.files[0];
+  e.target.value = ''; // permite reimportar el mismo archivo dos veces seguidas
+  if(!file) return;
+  manejarArchivoImportado(file);
 });
 
 /* =====================================================
