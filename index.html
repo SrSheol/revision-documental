@@ -46,6 +46,8 @@
     --texto: #223133;
     --texto-suave: #5B6C6E;
     --blanco: #FFFFFF;
+    --header-height: 64px;
+    --head-row1-height: 36px;
   }
   *{box-sizing:border-box;}
   body{
@@ -59,7 +61,7 @@
   header{
     background:linear-gradient(90deg,var(--azul-oscuro),var(--azul));
     color:#fff;
-    padding:18px 24px;
+    padding:14px 24px;
     display:flex;
     align-items:center;
     justify-content:space-between;
@@ -68,16 +70,16 @@
     box-shadow:0 2px 8px rgba(0,0,0,0.15);
     position:sticky;
     top:0;
-    z-index:50;
+    z-index:500;
   }
   header h1{
     margin:0;
-    font-size:22px;
+    font-size:20px;
     letter-spacing:0.3px;
   }
   header h1 span{
     display:block;
-    font-size:12px;
+    font-size:11px;
     font-weight:400;
     opacity:0.85;
   }
@@ -130,12 +132,55 @@
   .btn-mini:hover{background:var(--azul);}
   .btn-mini.rojo{background:var(--rojo);}
   .btn-mini.verde{background:var(--verde);}
+  .btn-mini.gris{background:var(--texto-suave);}
   .btn-mini:disabled{opacity:0.4;cursor:not-allowed;}
+
+  /* ===================== MENÚS DESPLEGABLES DEL HEADER ===================== */
+  .menu-dropdown{position:relative;display:inline-block;}
+  .menu-list{
+    display:none;
+    position:absolute;
+    right:0;
+    top:calc(100% + 6px);
+    background:#fff;
+    border:1px solid var(--gris-borde);
+    border-radius:10px;
+    box-shadow:0 10px 28px rgba(0,0,0,0.2);
+    min-width:250px;
+    z-index:520;
+    overflow:hidden;
+    padding:6px;
+  }
+  .menu-dropdown.open .menu-list{display:block;}
+  .menu-item{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    width:100%;
+    text-align:left;
+    background:none;
+    border:none;
+    padding:9px 10px;
+    border-radius:8px;
+    font-size:13px;
+    font-weight:600;
+    color:var(--texto);
+    cursor:pointer;
+  }
+  .menu-item:hover{background:var(--gris-fondo);}
+  .menu-item:disabled{opacity:.45;cursor:not-allowed;}
+  body.dark-mode .menu-list{background:#1E2A2D;border-color:var(--gris-borde);}
+  body.dark-mode .menu-item{color:var(--texto);}
+  body.dark-mode .menu-item:hover{background:#263437;}
 
   .tabs{
     display:flex;
     gap:8px;
     padding:14px 24px 0 24px;
+    position:sticky;
+    top:var(--header-height, 64px);
+    z-index:60;
+    background:transparent;
   }
   .tab-btn{
     background:#fff;
@@ -262,37 +307,43 @@
     color:#fff;
     padding:8px 6px;
     text-align:center;
-    position:sticky;
-    top:0;
-    z-index:2;
     font-weight:600;
+  }
+  thead tr:first-child th{
+    position:sticky;
+    top:var(--header-height, 64px);
+    z-index:22;
   }
   thead tr.sub-head th{
     background:#2A8E95;
     font-size:11px;
     padding:5px;
+    position:sticky;
+    top:calc(var(--header-height, 64px) + var(--head-row1-height, 36px));
+    z-index:21;
   }
   th.sticky-col, td.sticky-col{
     position:sticky;
     left:0;
     background:#fff;
-    z-index:1;
+    z-index:10;
     box-shadow:2px 0 4px rgba(0,0,0,0.05);
   }
   th.sticky-col2, td.sticky-col2{
     position:sticky;
     left:70px;
     background:#fff;
-    z-index:1;
+    z-index:10;
     box-shadow:2px 0 4px rgba(0,0,0,0.05);
   }
   thead th.sticky-col, thead th.sticky-col2{
     background:var(--azul-oscuro);
-    z-index:3;
+    z-index:23;
   }
   tbody tr:nth-child(even) td:not(.sticky-col):not(.sticky-col2){background:#F8FBFB;}
   tbody tr:nth-child(even) td.sticky-col, tbody tr:nth-child(even) td.sticky-col2{background:#F8FBFB;}
-  tbody tr:hover td{background:#EAF7F8;}
+  tbody tr:hover td{background:#DDF2F3;}
+  tbody tr.active-row td{background:#C9EDEF !important;}
   td{
     padding:6px 5px;
     text-align:center;
@@ -301,6 +352,17 @@
     vertical-align:middle;
   }
   td.ot-cell{font-weight:800;color:var(--azul-oscuro);font-size:15px;}
+  .progress-badge{
+    font-size:9.5px;
+    font-weight:700;
+    color:var(--texto-suave);
+    background:var(--gris-fondo);
+    border:1px solid var(--gris-borde);
+    border-radius:6px;
+    padding:1px 5px;
+    margin-top:2px;
+    display:inline-block;
+  }
   td.permiso-cell{
     font-size:13px;
     font-weight:700;
@@ -331,6 +393,10 @@
     border-color:var(--azul);
   }
   .comment-input::placeholder{color:#B9C6C8;}
+  .comment-general-input{
+    width:170px;
+    text-align:left;
+  }
 
   td.lista-cell{
     text-align:left;
@@ -341,6 +407,11 @@
   }
   td.lista-cell.listos-cell{color:var(--verde);}
   td.lista-cell.faltantes-cell{color:var(--rojo);}
+  td.comentario-general-cell{
+    text-align:left;
+    max-width:190px;
+    white-space:normal;
+  }
   .lista-wrap{
     display:flex;
     align-items:flex-start;
@@ -408,6 +479,7 @@
     gap:5px;
     align-items:center;
     justify-content:center;
+    flex-wrap:wrap;
   }
   .rev-count-badge{
     font-size:10.5px;
@@ -489,7 +561,7 @@
     display:flex;
     align-items:center;
     justify-content:center;
-    z-index:100;
+    z-index:1000;
     font-size:15px;
     font-weight:600;
     color:var(--azul-oscuro);
@@ -514,7 +586,7 @@
     display:flex;
     align-items:center;
     justify-content:center;
-    z-index:200;
+    z-index:900;
     padding:16px;
   }
   .login-card{
@@ -617,7 +689,7 @@
     display:flex;
     align-items:center;
     justify-content:center;
-    z-index:300;
+    z-index:950;
     padding:16px;
   }
   .alert-modal-card{
@@ -660,7 +732,7 @@
   }
   .alert-modal-btn:hover{background:var(--azul);}
 
-  /* ===================== MODAL GENÉRICO (preview importación, resumen, actividad) ===================== */
+  /* ===================== MODAL GENÉRICO (preview importación, resumen, actividad, comparar) ===================== */
   .generic-modal-overlay{
     position:fixed;
     inset:0;
@@ -668,7 +740,7 @@
     display:flex;
     align-items:center;
     justify-content:center;
-    z-index:300;
+    z-index:950;
     padding:16px;
   }
   .generic-modal-card{
@@ -676,7 +748,7 @@
     border-radius:14px;
     padding:24px 24px 20px 24px;
     width:100%;
-    max-width:460px;
+    max-width:520px;
     max-height:82vh;
     overflow-y:auto;
     box-shadow:0 10px 40px rgba(0,0,0,0.28);
@@ -729,6 +801,15 @@
     color:#fff;
   }
 
+  /* ===================== VACÍO POR FILTRO ===================== */
+  .empty-state-cell{
+    padding:26px 16px;
+    text-align:center;
+    color:var(--texto-suave);
+    font-size:13px;
+  }
+  .empty-state-cell button{margin-top:10px;}
+
   /* ===================== ACTIVIDAD RECIENTE ===================== */
   .btn-actividad{
     position:relative;
@@ -742,7 +823,7 @@
     max-width:92vw;
     background:#fff;
     box-shadow:-4px 0 20px rgba(0,0,0,0.18);
-    z-index:250;
+    z-index:850;
     display:flex;
     flex-direction:column;
     transform:translateX(100%);
@@ -806,13 +887,73 @@
     background:#fff;
     border-top:1.5px solid var(--gris-borde);
     box-shadow:0 -2px 8px rgba(0,0,0,0.08);
-    z-index:60;
+    z-index:400;
     -webkit-overflow-scrolling:touch;
   }
   .bottom-scrollbar::-webkit-scrollbar{height:14px;}
   .bottom-scrollbar::-webkit-scrollbar-track{background:var(--gris-fondo);}
   .bottom-scrollbar::-webkit-scrollbar-thumb{background:var(--azul-oscuro);border-radius:7px;}
   #bottomScrollbarInner{height:1px;}
+
+  /* ===================== BOTÓN VOLVER ARRIBA ===================== */
+  .back-to-top{
+    position:fixed;
+    right:20px;
+    bottom:32px;
+    width:46px;
+    height:46px;
+    border-radius:50%;
+    border:none;
+    background:var(--azul-oscuro);
+    color:#fff;
+    font-size:20px;
+    cursor:pointer;
+    box-shadow:0 4px 16px rgba(0,0,0,0.28);
+    z-index:410;
+    display:none;
+    align-items:center;
+    justify-content:center;
+  }
+  .back-to-top:hover{background:var(--azul);}
+
+  /* ===================== TOASTS DE ESQUINA ===================== */
+  .toast-container{
+    position:fixed;
+    right:20px;
+    bottom:88px;
+    display:flex;
+    flex-direction:column-reverse;
+    gap:8px;
+    z-index:990;
+    pointer-events:none;
+    max-width:290px;
+  }
+  .toast{
+    background:#223133;
+    color:#fff;
+    padding:9px 14px;
+    border-radius:8px;
+    font-size:12.5px;
+    box-shadow:0 6px 18px rgba(0,0,0,0.25);
+    opacity:0;
+    transform:translateY(8px);
+    transition:opacity .2s ease, transform .2s ease;
+  }
+  .toast.show{opacity:1;transform:translateY(0);}
+  .toast.exito{background:var(--verde);color:#0B3320;}
+  .toast.error{background:var(--rojo);}
+  body.dark-mode .toast{background:#0F1719;}
+
+  /* ===================== MODO COMPACTO ===================== */
+  body.compact-mode td{padding:2px 4px;}
+  body.compact-mode table{font-size:11px;}
+  body.compact-mode .chk{width:20px;height:20px;font-size:11px;}
+  body.compact-mode .comment-input{font-size:9px;padding:1px 3px;width:58px;}
+  body.compact-mode .comment-general-input{width:130px;}
+  body.compact-mode td.ot-cell{font-size:13px;}
+  body.compact-mode .stat-card{padding:6px 10px;}
+  body.compact-mode .chart-card{height:190px;}
+  body.compact-mode .chart-canvas-wrap{height:150px;}
 
   /* ===================== MODO OSCURO ===================== */
   body.dark-mode{
@@ -878,7 +1019,10 @@
     background: #212E31;
   }
   body.dark-mode tbody tr:hover td{
-    background: #263639;
+    background: #2C4144;
+  }
+  body.dark-mode tbody tr.active-row td{
+    background: #204347 !important;
   }
   body.dark-mode .chk{
     background: #263437;
@@ -922,6 +1066,10 @@
     border-color: var(--gris-borde);
     color: var(--texto-suave);
   }
+  body.dark-mode .progress-badge{
+    background:#263437;
+    border-color:var(--gris-borde);
+  }
 
   @media (max-width:700px){
     header{padding:14px 14px;}
@@ -935,6 +1083,7 @@
     .chart-card{height:250px;}
     .chart-canvas-wrap{height:210px;}
     .activity-panel{width:100vw;}
+    .menu-list{min-width:210px;}
   }
 </style>
 </head>
@@ -968,7 +1117,7 @@
   </div>
 </div>
 
-<!-- ===================== MODAL GENÉRICO (vista previa importación / resumen al entrar) ===================== -->
+<!-- ===================== MODAL GENÉRICO (vista previa importación / resumen / comparar grupos) ===================== -->
 <div class="generic-modal-overlay" id="genericModalOverlay" style="display:none;">
   <div class="generic-modal-card" id="genericModalCard"></div>
 </div>
@@ -982,6 +1131,12 @@
   <div class="activity-panel-body" id="activityPanelBody"></div>
 </div>
 
+<!-- ===================== TOASTS ===================== -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- ===================== BOTÓN VOLVER ARRIBA ===================== -->
+<button class="back-to-top" id="btnBackToTop" title="Volver arriba">↑</button>
+
 <header>
   <h1>📋 Revisión Documental
     <span>Control de expedientes por OT · D1–D22</span>
@@ -992,16 +1147,42 @@
       <span id="currentUserNombre"></span>
     </span>
     <button class="btn-cambiar-usuario" id="btnCambiarUsuario">Cambiar usuario</button>
-    <button class="btn-tema" id="btnToggleTema" title="Cambiar modo claro/oscuro">🌙</button>
     <span class="save-status" id="saveStatus">✓ Sincronizado</span>
-    <button class="btn btn-blanco btn-actividad" id="btnActividad">🕒 Actividad</button>
-    <button class="btn btn-blanco" id="btnPlantillaExcel">📄 Plantilla Excel</button>
-    <button class="btn btn-blanco" id="btnExportPDF">📄 PDF</button>
+    <button class="btn-tema" id="btnToggleTema" title="Cambiar modo claro/oscuro">🌙</button>
+
+    <div class="menu-dropdown" id="menuExport">
+      <button class="btn btn-blanco menu-btn" data-menu="menuExport">📄 Export ▾</button>
+      <div class="menu-list">
+        <button class="menu-item" id="btnExportPNG">🖼️ Export PNG</button>
+        <button class="menu-item" id="btnExportXLSX">📊 Export Excel</button>
+        <button class="menu-item" id="btnExportPDF">📄 Export PDF</button>
+        <button class="menu-item" id="btnPlantillaExcel">📄 Plantilla Excel</button>
+      </div>
+    </div>
+
+    <div class="menu-dropdown" id="menuList" style="display:none;">
+      <button class="btn btn-blanco menu-btn" data-menu="menuList">📥 List ▾</button>
+      <div class="menu-list">
+        <button class="menu-item" id="btnImportarExcel">📥 Importar lista (Excel)</button>
+        <button class="menu-item" id="btnDeshacerImportacion">↩️ Deshacer última importación</button>
+      </div>
+    </div>
     <input type="file" id="inputImportarExcel" accept=".xlsx,.xls" style="display:none;">
-    <button class="btn btn-verde" id="btnImportarExcel" style="display:none;">📥 Importar lista (Excel)</button>
-    <button class="btn btn-rojo" id="btnDeshacerImportacion" style="display:none;">↩ Deshacer última importación</button>
-    <button class="btn btn-amarillo" id="btnExportPNG">🖼 PNG</button>
-    <button class="btn btn-blanco" id="btnExportXLSX">📊 Excel</button>
+
+    <div class="menu-dropdown" id="menuAnalysis">
+      <button class="btn btn-blanco menu-btn" data-menu="menuAnalysis">📊 Analysis ▾</button>
+      <div class="menu-list">
+        <button class="menu-item" id="btnCompararGrupos">📊 Comparar grupos</button>
+        <button class="menu-item" id="btnActividad">🕒 Actividad</button>
+      </div>
+    </div>
+
+    <div class="menu-dropdown" id="menuView">
+      <button class="btn btn-blanco menu-btn" data-menu="menuView">🎛️ View ▾</button>
+      <div class="menu-list">
+        <button class="menu-item" id="btnCompactMode">🔳 Modo compacto: <span id="compactModeState">Normal</span></button>
+      </div>
+    </div>
   </div>
 </header>
 
@@ -1059,6 +1240,7 @@
             <th id="docsHeadRange" colspan="22">Documentos</th>
             <th rowspan="2" style="min-width:230px;">Listos</th>
             <th rowspan="2" style="min-width:230px;">Faltantes</th>
+            <th rowspan="2" style="min-width:190px;">Comentario general</th>
           </tr>
           <tr class="sub-head" id="docsSubHead"></tr>
         </thead>
@@ -1085,7 +1267,7 @@
       </div>
     </div>
     <div style="font-size:12px;color:var(--texto-suave);margin-bottom:10px;">
-      Cada OT tiene su propio número de revisiones. Usa los botones ➕ / ➖ de cada fila para agregar o quitar revisiones individuales. Al marcar el check, la fecha se llena automáticamente con el día de hoy. Al completar la última revisión posible, la OT pasa automáticamente a "Manejo Interno".
+      Cada OT tiene su propio número de revisiones. Usa los botones ➕ / ➖ de cada fila para agregar o quitar revisiones individuales. Al marcar el check, la fecha se llena automáticamente con el día de hoy. Al completar la última revisión posible, la OT pasa automáticamente a "Manejo Interno". Usa 📝 para ver/editar el comentario general del expediente.
     </div>
     <div class="table-wrap" id="tableWrapRevs">
       <table id="tableRevs">
@@ -1495,11 +1677,27 @@ DATA_INICIAL.forEach(item=>{
 
 const NUM_DOCS = 22;
 const DEFAULT_MAX_REVISIONES = 5;
-const MAX_LOG_ACTIVIDAD = 50;
+const MAX_LOG_ACTIVIDAD = 100;
 
 let state = null;
 let grupoActual = null;
 let filtroRapidoActual = 'todos';
+
+/* =====================================================
+   ORDEN DE OT: numérico ascendente si aplica, si no alfabético
+===================================================== */
+function compararOT(a, b){
+  const otA = String(a.ot).trim();
+  const otB = String(b.ot).trim();
+  const na = Number(otA);
+  const nb = Number(otB);
+  const aEsNum = otA !== '' && !isNaN(na) && isFinite(na);
+  const bEsNum = otB !== '' && !isNaN(nb) && isFinite(nb);
+  if(aEsNum && bEsNum) return na - nb;
+  if(aEsNum && !bEsNum) return -1;
+  if(!aEsNum && bEsNum) return 1;
+  return otA.localeCompare(otB, 'es', { sensitivity:'base', numeric:true });
+}
 
 /* =====================================================
    GRUPOS: recálculo dinámico + orden alfabético (es)
@@ -1521,10 +1719,13 @@ function recalcularGrupos(){
 }
 
 // Devuelve la lista de items del catálogo que corresponden al grupo
-// actualmente seleccionado (o todos, si grupoActual === GRUPO_TODOS).
+// actualmente seleccionado (o todos, si grupoActual === GRUPO_TODOS),
+// siempre ordenada: OT numéricas ascendente, el resto alfabéticamente.
 function itemsDelGrupoActual(){
-  if(grupoActual === GRUPO_TODOS) return state.items;
-  return state.items.filter(item=>item.grupo===grupoActual);
+  const items = (grupoActual === GRUPO_TODOS)
+    ? state.items.slice()
+    : state.items.filter(item=>item.grupo===grupoActual);
+  return items.sort(compararOT);
 }
 
 /* =====================================================
@@ -1535,17 +1736,20 @@ function itemsDelGrupoActual(){
 function estadoVacio(){
   const docs = {};
   const revs = {};
+  const comentariosGenerales = {};
   DATA_INICIAL.forEach(item=>{
     // Cada documento ahora guarda estado (ok/bad/null) + comentario +
     // el usuario que realizó la marca (para pintar el borde del check).
     docs[item.ot] = Array.from({length:NUM_DOCS}, ()=>({ estado: null, comentario: '', usuario: null }));
     // Cada OT arranca con exactamente 1 revisión
     revs[item.ot] = [ { checked:false, fecha:'' } ];
+    comentariosGenerales[item.ot] = '';
   });
   return {
     items: DATA_INICIAL,
     docs,
     revs,
+    comentariosGenerales,
     maxRevisiones: DEFAULT_MAX_REVISIONES,
     log: [],
     ultimaImportacion: null
@@ -1571,6 +1775,7 @@ function fusionarEstado(remoto){
     items: itemsBase,
     docs: {},
     revs: {},
+    comentariosGenerales: {},
     maxRevisiones: (typeof remoto.maxRevisiones === 'number' && remoto.maxRevisiones >= 1)
       ? remoto.maxRevisiones
       : DEFAULT_MAX_REVISIONES,
@@ -1608,6 +1813,10 @@ function fusionarEstado(remoto){
     }else{
       resultado.revs[item.ot] = [ { checked:false, fecha:'' } ];
     }
+
+    // Comentario general del expediente
+    const comentarioRemoto = remoto.comentariosGenerales && remoto.comentariosGenerales[item.ot];
+    resultado.comentariosGenerales[item.ot] = (typeof comentarioRemoto === 'string') ? comentarioRemoto : '';
   });
 
   return resultado;
@@ -1615,6 +1824,22 @@ function fusionarEstado(remoto){
 
 // Guardado con "debounce" para no saturar Firestore mientras se escribe.
 let saveTimer = null;
+let lastSavedAt = null;
+let saveStatusInterval = null;
+
+function iniciarContadorGuardado(){
+  if(saveStatusInterval) clearInterval(saveStatusInterval);
+  saveStatusInterval = setInterval(actualizarTextoUltimoGuardado, 1000);
+}
+
+function actualizarTextoUltimoGuardado(){
+  const statusEl = document.getElementById('saveStatus');
+  if(!statusEl || !lastSavedAt) return;
+  if(statusEl.classList.contains('saving') || statusEl.classList.contains('error')) return;
+  const segundos = Math.max(0, Math.round((Date.now() - lastSavedAt)/1000));
+  statusEl.textContent = segundos < 3 ? '✓ Guardado' : ('✓ Guardado hace ' + segundos + 's');
+}
+
 function guardarEstado(inmediato){
   const statusEl = document.getElementById('saveStatus');
   if(statusEl){
@@ -1625,10 +1850,12 @@ function guardarEstado(inmediato){
   const ejecutarGuardado = ()=>{
     docRef.set(state)
       .then(()=>{
+        lastSavedAt = Date.now();
         if(statusEl){
-          statusEl.textContent = '✓ Sincronizado';
+          statusEl.textContent = '✓ Guardado';
           statusEl.className = 'save-status saved';
         }
+        iniciarContadorGuardado();
       })
       .catch(err=>{
         console.error('Error guardando en Firebase:', err);
@@ -1636,6 +1863,7 @@ function guardarEstado(inmediato){
           statusEl.textContent = '⚠ Error al guardar';
           statusEl.className = 'save-status error';
         }
+        mostrarToast('No se pudo guardar. Revisa tu conexión.', 'error');
       });
   };
 
@@ -1699,14 +1927,16 @@ function formatoCopiado(prefijo, items){
 // Copia texto al portapapeles con respaldo por si el navegador bloquea la API.
 function copiarTexto(texto, btnEl){
   const marcarCopiado = ()=>{
-    if(!btnEl) return;
-    const original = btnEl.textContent;
-    btnEl.textContent = '✓';
-    btnEl.classList.add('copiado');
-    setTimeout(()=>{
-      btnEl.textContent = original;
-      btnEl.classList.remove('copiado');
-    }, 1200);
+    if(btnEl){
+      const original = btnEl.textContent;
+      btnEl.textContent = '✓';
+      btnEl.classList.add('copiado');
+      setTimeout(()=>{
+        btnEl.textContent = original;
+        btnEl.classList.remove('copiado');
+      }, 1200);
+    }
+    mostrarToast('Copiado al portapapeles', 'exito');
   };
 
   if(navigator.clipboard && navigator.clipboard.writeText){
@@ -1729,6 +1959,23 @@ function copiarTextoFallback(texto){
   ta.select();
   try{ document.execCommand('copy'); }catch(e){ /* silencioso */ }
   document.body.removeChild(ta);
+}
+
+/* =====================================================
+   TOASTS DE ESQUINA (acciones frecuentes: copiar, marcar, errores menores)
+===================================================== */
+function mostrarToast(mensaje, tipo){
+  const cont = document.getElementById('toastContainer');
+  if(!cont) return;
+  const toast = document.createElement('div');
+  toast.className = 'toast' + (tipo==='exito' ? ' exito' : tipo==='error' ? ' error' : '');
+  toast.textContent = mensaje;
+  cont.appendChild(toast);
+  requestAnimationFrame(()=> toast.classList.add('show'));
+  setTimeout(()=>{
+    toast.classList.remove('show');
+    setTimeout(()=> toast.remove(), 250);
+  }, 2800);
 }
 
 /* =====================================================
@@ -1832,7 +2079,7 @@ document.getElementById('alertModalOverlay').addEventListener('click', (e)=>{
 });
 
 /* =====================================================
-   MODAL GENÉRICO (vista previa de importación / resumen al entrar)
+   MODAL GENÉRICO (vista previa de importación / resumen al entrar / comparar grupos)
 ===================================================== */
 function mostrarModalGenerico(html){
   const overlay = document.getElementById('genericModalOverlay');
@@ -1852,13 +2099,12 @@ document.getElementById('genericModalOverlay').addEventListener('click', (e)=>{
 ===================================================== */
 
 // Actualiza el badge del header con el nombre/color del usuario actual,
-// y muestra/oculta los botones exclusivos de administrador (Juan/Judith).
+// y muestra/oculta el menú exclusivo de administrador (Juan/Judith).
 function actualizarBadgeUsuario(){
   const badge = document.getElementById('currentUserBadge');
   const dot = document.getElementById('currentUserDot');
   const nombreEl = document.getElementById('currentUserNombre');
-  const btnImportar = document.getElementById('btnImportarExcel');
-  const btnDeshacer = document.getElementById('btnDeshacerImportacion');
+  const menuList = document.getElementById('menuList');
 
   if(usuarioActual){
     badge.style.display = 'inline-flex';
@@ -1870,11 +2116,11 @@ function actualizarBadgeUsuario(){
   }
 
   const admin = esAdmin();
-  if(btnImportar) btnImportar.style.display = admin ? 'inline-flex' : 'none';
-  if(btnDeshacer){
-    btnDeshacer.style.display = admin ? 'inline-flex' : 'none';
+  if(menuList){
+    menuList.style.display = admin ? 'inline-block' : 'none';
     if(admin) actualizarEstadoBotonDeshacer();
   }
+  actualizarAlturaHeader();
 }
 
 // Llena el <select> del modal de login con los nombres permitidos.
@@ -1913,6 +2159,7 @@ function confirmarLogin(){
   localStorage.setItem(LOGIN_STORAGE_KEY, usuarioActual);
   actualizarBadgeUsuario();
   cargarTemaUsuario(); // aplica el modo claro/oscuro guardado para este usuario
+  cargarCompactUsuario(); // aplica el modo compacto guardado para este usuario
   ocultarModalLogin();
   iniciarApp(true);
 }
@@ -1954,6 +2201,104 @@ function alternarTema(){
 }
 
 document.getElementById('btnToggleTema').addEventListener('click', alternarTema);
+
+/* =====================================================
+   MODO COMPACTO (preferencia guardada por usuario)
+===================================================== */
+const COMPACT_STORAGE_PREFIX = 'revDoc_compact_';
+
+function claveCompactUsuario(){
+  return COMPACT_STORAGE_PREFIX + (usuarioActual || '_sin_usuario');
+}
+
+function aplicarCompact(activo){
+  document.body.classList.toggle('compact-mode', activo);
+  const span = document.getElementById('compactModeState');
+  if(span) span.textContent = activo ? 'Compacto' : 'Normal';
+  actualizarAlturaHeader();
+  actualizarBottomScrollbar();
+}
+
+function cargarCompactUsuario(){
+  const guardado = localStorage.getItem(claveCompactUsuario());
+  aplicarCompact(guardado === '1');
+}
+
+document.getElementById('btnCompactMode').addEventListener('click', ()=>{
+  const activo = !document.body.classList.contains('compact-mode');
+  localStorage.setItem(claveCompactUsuario(), activo ? '1' : '0');
+  aplicarCompact(activo);
+});
+
+/* =====================================================
+   MENÚS DESPLEGABLES DEL HEADER
+===================================================== */
+document.querySelectorAll('.menu-btn').forEach(btn=>{
+  btn.addEventListener('click', (e)=>{
+    e.stopPropagation();
+    const id = btn.dataset.menu;
+    const dd = document.getElementById(id);
+    const yaAbierto = dd.classList.contains('open');
+    document.querySelectorAll('.menu-dropdown.open').forEach(m=>m.classList.remove('open'));
+    if(!yaAbierto) dd.classList.add('open');
+  });
+});
+document.addEventListener('click', ()=>{
+  document.querySelectorAll('.menu-dropdown.open').forEach(m=>m.classList.remove('open'));
+});
+document.querySelectorAll('.menu-list').forEach(list=>{
+  list.addEventListener('click', (e)=> e.stopPropagation());
+});
+document.querySelectorAll('.menu-item').forEach(item=>{
+  item.addEventListener('click', ()=>{
+    document.querySelectorAll('.menu-dropdown.open').forEach(m=>m.classList.remove('open'));
+  });
+});
+
+/* =====================================================
+   ALTURA DEL HEADER (para el sticky de tabs y encabezado de tabla)
+===================================================== */
+function actualizarAlturaHeader(){
+  const header = document.querySelector('header');
+  if(header){
+    document.documentElement.style.setProperty('--header-height', header.offsetHeight + 'px');
+  }
+  const headRow1 = document.querySelector('#tableDocs thead tr:first-child');
+  if(headRow1){
+    document.documentElement.style.setProperty('--head-row1-height', headRow1.offsetHeight + 'px');
+  }
+  actualizarBottomScrollbar();
+}
+window.addEventListener('resize', actualizarAlturaHeader);
+
+/* =====================================================
+   BOTÓN VOLVER ARRIBA
+===================================================== */
+window.addEventListener('scroll', ()=>{
+  const btn = document.getElementById('btnBackToTop');
+  if(!btn) return;
+  btn.style.display = window.scrollY > 260 ? 'flex' : 'none';
+});
+document.getElementById('btnBackToTop').addEventListener('click', ()=>{
+  const activeBtn = document.querySelector('.tab-btn.active');
+  const tab = activeBtn ? activeBtn.dataset.tab : 'docs';
+  const panel = document.getElementById('panel-' + tab);
+  (panel || document.body).scrollIntoView({ behavior:'smooth', block:'start' });
+});
+
+/* =====================================================
+   RESALTADO DE FILA ACTIVA (última acción)
+===================================================== */
+let otRecienteActiva = null;
+let temporizadorActivo = null;
+function marcarOTActiva(ot){
+  otRecienteActiva = ot;
+  if(temporizadorActivo) clearTimeout(temporizadorActivo);
+  temporizadorActivo = setTimeout(()=>{
+    otRecienteActiva = null;
+    document.querySelectorAll('tr.active-row').forEach(tr=>tr.classList.remove('active-row'));
+  }, 2200);
+}
 
 /* =====================================================
    BARRA DE SCROLL HORIZONTAL FIJA (sincronizada)
@@ -2080,6 +2425,43 @@ function cambiarGrupo(nuevoGrupo){
   renderRevsHead();
   renderRevsBody(document.getElementById('searchRevs').value);
   renderManejoInterno(document.getElementById('searchManejo').value);
+  guardarUltimaVista();
+}
+
+/* =====================================================
+   RECORDAR ÚLTIMO GRUPO Y PESTAÑA (por usuario)
+===================================================== */
+const VIEW_STORAGE_PREFIX = 'revDoc_lastView_';
+
+function claveVistaUsuario(){
+  return VIEW_STORAGE_PREFIX + (usuarioActual || '_sin_usuario');
+}
+
+function guardarUltimaVista(){
+  if(!usuarioActual) return;
+  const activeBtn = document.querySelector('.tab-btn.active');
+  const tab = activeBtn ? activeBtn.dataset.tab : 'docs';
+  try{
+    localStorage.setItem(claveVistaUsuario(), JSON.stringify({ grupo: grupoActual, tab }));
+  }catch(e){ /* almacenamiento no disponible: se ignora */ }
+}
+
+function restaurarUltimaVista(){
+  if(!usuarioActual) return;
+  let datos = null;
+  try{
+    const raw = localStorage.getItem(claveVistaUsuario());
+    if(raw) datos = JSON.parse(raw);
+  }catch(e){ datos = null; }
+  if(!datos) return;
+
+  if(datos.grupo && (datos.grupo === GRUPO_TODOS || GRUPOS.includes(datos.grupo))){
+    cambiarGrupo(datos.grupo);
+  }
+  if(datos.tab){
+    const btn = document.querySelector('.tab-btn[data-tab="'+datos.tab+'"]');
+    if(btn && !btn.classList.contains('active')) btn.click();
+  }
 }
 
 /* =====================================================
@@ -2109,6 +2491,15 @@ document.querySelectorAll('#filtrosRapidosDocs .filtro-chip').forEach(chip=>{
   });
 });
 
+function limpiarFiltrosDocs(){
+  document.getElementById('searchDocs').value = '';
+  document.querySelectorAll('#filtrosRapidosDocs .filtro-chip').forEach(c=>c.classList.remove('active'));
+  const chipTodos = document.querySelector('#filtrosRapidosDocs .filtro-chip[data-filtro="todos"]');
+  if(chipTodos) chipTodos.classList.add('active');
+  filtroRapidoActual = 'todos';
+  renderDocsBody('');
+}
+
 /* =====================================================
    RENDER: TABLERO DE DOCUMENTOS
 ===================================================== */
@@ -2135,22 +2526,39 @@ function actualizarListosFaltantesFila(ot){
   const btnFaltantes = document.getElementById('btn-copy-faltantes-'+ot);
   if(btnListos) btnListos.dataset.texto = formatoCopiado('Documentos registrados', listos);
   if(btnFaltantes) btnFaltantes.dataset.texto = formatoCopiado('Documentos faltantes', faltantes);
+
+  const badge = document.getElementById('progress-badge-'+ot);
+  if(badge){
+    const okCount = state.docs[ot].filter(v=>v.estado==='ok').length;
+    badge.textContent = okCount + '/' + NUM_DOCS;
+  }
 }
 
 function renderDocsBody(filter){
   const body = document.getElementById('docsBody');
   body.innerHTML = '';
   const f = (filter||'').trim().toLowerCase();
+  let visibles = 0;
 
   itemsDelGrupoActual().forEach(item=>{
     if(f && !(item.ot.toLowerCase().includes(f) || item.permiso.toLowerCase().includes(f))) return;
     if(!otPasaFiltroRapido(item.ot)) return;
+    visibles++;
 
     const tr = document.createElement('tr');
+    if(item.ot === otRecienteActiva) tr.classList.add('active-row');
 
     const tdOt = document.createElement('td');
     tdOt.className = 'sticky-col ot-cell';
-    tdOt.textContent = item.ot;
+    const otTexto = document.createElement('div');
+    otTexto.textContent = item.ot;
+    tdOt.appendChild(otTexto);
+    const okCountInicial = state.docs[item.ot].filter(v=>v.estado==='ok').length;
+    const badgeProgreso = document.createElement('div');
+    badgeProgreso.className = 'progress-badge';
+    badgeProgreso.id = 'progress-badge-'+item.ot;
+    badgeProgreso.textContent = okCountInicial + '/' + NUM_DOCS;
+    tdOt.appendChild(badgeProgreso);
     tr.appendChild(tdOt);
 
     const tdPermiso = document.createElement('td');
@@ -2192,8 +2600,12 @@ function renderDocsBody(filter){
           docData.estado = (docData.estado==='bad') ? null : 'bad';
           docData.usuario = docData.estado ? (usuarioActual || null) : null;
           guardarEstado();
+          marcarOTActiva(item.ot);
           if(docData.estado==='bad'){
             registrarActividad(`${usuarioActual||'Alguien'} puso tache en D${i+1} OT ${item.ot}`);
+            mostrarToast(`D${i+1} marcado ❌ en OT ${item.ot}`);
+          }else{
+            registrarActividad(`${usuarioActual||'Alguien'} quitó la marca de D${i+1} OT ${item.ot}`);
           }
           renderDocsBody(document.getElementById('searchDocs').value);
           renderStats();
@@ -2203,8 +2615,12 @@ function renderDocsBody(filter){
             docData.estado = (docData.estado==='ok') ? null : 'ok';
             docData.usuario = docData.estado ? (usuarioActual || null) : null;
             guardarEstado();
+            marcarOTActiva(item.ot);
             if(docData.estado==='ok'){
               registrarActividad(`${usuarioActual||'Alguien'} marcó D${i+1} ✅ en OT ${item.ot}`);
+              mostrarToast(`D${i+1} marcado ✅ en OT ${item.ot}`);
+            }else{
+              registrarActividad(`${usuarioActual||'Alguien'} quitó la marca de D${i+1} OT ${item.ot}`);
             }
             renderDocsBody(document.getElementById('searchDocs').value);
             renderStats();
@@ -2283,8 +2699,37 @@ function renderDocsBody(filter){
     tdFaltantes.appendChild(wrapFaltantes);
     tr.appendChild(tdFaltantes);
 
+    // Celda Comentario general (nota libre del expediente, aparte de los comentarios por Dx)
+    const tdComentarioGeneral = document.createElement('td');
+    tdComentarioGeneral.className = 'comentario-general-cell';
+    const inputGeneral = document.createElement('input');
+    inputGeneral.type = 'text';
+    inputGeneral.className = 'comment-input comment-general-input';
+    inputGeneral.placeholder = 'Nota general del expediente...';
+    inputGeneral.value = (state.comentariosGenerales && state.comentariosGenerales[item.ot]) || '';
+    inputGeneral.addEventListener('input', ()=>{
+      if(!state.comentariosGenerales) state.comentariosGenerales = {};
+      state.comentariosGenerales[item.ot] = inputGeneral.value;
+      guardarEstado();
+    });
+    tdComentarioGeneral.appendChild(inputGeneral);
+    tr.appendChild(tdComentarioGeneral);
+
     body.appendChild(tr);
   });
+
+  if(!visibles){
+    const tr = document.createElement('tr');
+    const td = document.createElement('td');
+    td.colSpan = NUM_DOCS + 5;
+    td.className = 'empty-state-cell';
+    td.innerHTML = 'No se encontraron OT con la búsqueda o el filtro actual.<br>' +
+      '<button class="btn btn-blanco" id="btnLimpiarFiltrosDocs">🧹 Limpiar filtro / búsqueda</button>';
+    tr.appendChild(td);
+    body.appendChild(tr);
+    const btnLimpiar = document.getElementById('btnLimpiarFiltrosDocs');
+    if(btnLimpiar) btnLimpiar.addEventListener('click', limpiarFiltrosDocs);
+  }
 
   actualizarBottomScrollbar();
 }
@@ -2423,10 +2868,6 @@ function renderCharts(){
   const pctCumplimiento = totalDocsPosibles > 0
     ? Math.round((okCount / totalDocsPosibles) * 1000) / 10
     : 0;
-
-  console.log('[Gráficas] grupo:', grupoActual, '| OT en el grupo:', totalOT,
-    '| documentos ✅:', okCount, '| documentos ❌:', badCount,
-    '| % cumplimiento:', pctCumplimiento);
 
   renderChartCumplimiento(pctCumplimiento);
   renderChartFaltantes(badPorDoc, totalOT);
@@ -2594,8 +3035,8 @@ function renderRevsHead(){
   }
 
   const thAcciones = document.createElement('th');
-  thAcciones.style.minWidth = '150px';
-  thAcciones.textContent = 'Revisiones (agregar/quitar)';
+  thAcciones.style.minWidth = '170px';
+  thAcciones.textContent = 'Revisiones / Nota';
   row.appendChild(thAcciones);
 }
 
@@ -2606,6 +3047,7 @@ function agregarRevisionOT(ot){
   }
   state.revs[ot].push({ checked:false, fecha:'' });
   guardarEstado();
+  marcarOTActiva(ot);
   renderRevsHead();
   renderRevsBody(document.getElementById('searchRevs').value);
   renderManejoInterno(document.getElementById('searchManejo').value);
@@ -2619,6 +3061,7 @@ function quitarRevisionOT(ot){
   if(!confirm('¿Eliminar la última revisión de la OT '+ot+'? Se perderán sus datos.')) return;
   state.revs[ot].pop();
   guardarEstado();
+  marcarOTActiva(ot);
   renderRevsHead();
   renderRevsBody(document.getElementById('searchRevs').value);
   renderManejoInterno(document.getElementById('searchManejo').value);
@@ -2632,16 +3075,37 @@ function fechaHoy(){
   return `${y}-${m}-${d}`;
 }
 
+// Permite ver/editar el comentario general del expediente desde la
+// pestaña de Revisiones sin saturar la tabla con otra columna ancha.
+function editarComentarioGeneral(ot){
+  if(!state.comentariosGenerales) state.comentariosGenerales = {};
+  const actual = state.comentariosGenerales[ot] || '';
+  const nuevo = window.prompt('Comentario general para la OT '+ot+':', actual);
+  if(nuevo === null) return;
+  state.comentariosGenerales[ot] = nuevo;
+  guardarEstado();
+  renderRevsBody(document.getElementById('searchRevs').value);
+  renderDocsBody(document.getElementById('searchDocs').value);
+}
+
+function limpiarFiltrosRevs(){
+  document.getElementById('searchRevs').value = '';
+  renderRevsBody('');
+}
+
 function renderRevsBody(filter){
   const body = document.getElementById('revsBody');
   body.innerHTML = '';
   const f = (filter||'').trim().toLowerCase();
   const columnas = calcularColumnasRevisiones();
+  let visibles = 0;
 
   itemsDelGrupoActual().forEach(item=>{
     if(f && !(item.ot.toLowerCase().includes(f) || item.permiso.toLowerCase().includes(f))) return;
+    visibles++;
 
     const tr = document.createElement('tr');
+    if(item.ot === otRecienteActiva) tr.classList.add('active-row');
 
     const tdOt = document.createElement('td');
     tdOt.className = 'sticky-col ot-cell';
@@ -2681,6 +3145,9 @@ function renderRevsBody(filter){
             revData.fecha = '';
           }
           guardarEstado();
+          marcarOTActiva(item.ot);
+          registrarActividad(`${usuarioActual||'Alguien'} ${revData.checked ? 'marcó' : 'quitó'} la revisión ${r+1} ✅ de OT ${item.ot}`);
+          mostrarToast(`Revisión ${r+1} ${revData.checked ? 'marcada' : 'desmarcada'} en OT ${item.ot}`);
           renderRevsBody(document.getElementById('searchRevs').value);
           renderManejoInterno(document.getElementById('searchManejo').value);
         });
@@ -2725,14 +3192,35 @@ function renderRevsBody(filter){
     btnMenos.disabled = revsOT.length <= 1;
     btnMenos.addEventListener('click', ()=> quitarRevisionOT(item.ot));
 
+    const btnNota = document.createElement('button');
+    btnNota.className = 'btn-mini gris';
+    btnNota.textContent = '📝';
+    const notaActual = (state.comentariosGenerales && state.comentariosGenerales[item.ot]) || '';
+    btnNota.title = notaActual ? ('Comentario general: ' + notaActual) : 'Agregar comentario general';
+    btnNota.addEventListener('click', ()=> editarComentarioGeneral(item.ot));
+
     accWrap.appendChild(btnMenos);
     accWrap.appendChild(badge);
     accWrap.appendChild(btnMas);
+    accWrap.appendChild(btnNota);
     tdAcciones.appendChild(accWrap);
     tr.appendChild(tdAcciones);
 
     body.appendChild(tr);
   });
+
+  if(!visibles){
+    const tr = document.createElement('tr');
+    const td = document.createElement('td');
+    td.colSpan = columnas + 3;
+    td.className = 'empty-state-cell';
+    td.innerHTML = 'No se encontraron OT con la búsqueda actual.<br>' +
+      '<button class="btn btn-blanco" id="btnLimpiarFiltrosRevs">🧹 Limpiar búsqueda</button>';
+    tr.appendChild(td);
+    body.appendChild(tr);
+    const btnLimpiar = document.getElementById('btnLimpiarFiltrosRevs');
+    if(btnLimpiar) btnLimpiar.addEventListener('click', limpiarFiltrosRevs);
+  }
 
   actualizarBottomScrollbar();
 }
@@ -2745,6 +3233,11 @@ function estaListaParaManejoInterno(ot){
   if(!revsOT || revsOT.length < state.maxRevisiones) return false;
   const ultima = revsOT[revsOT.length - 1];
   return !!(ultima && ultima.checked);
+}
+
+function limpiarFiltrosManejo(){
+  document.getElementById('searchManejo').value = '';
+  renderManejoInterno('');
 }
 
 function renderManejoInterno(filter){
@@ -2761,16 +3254,28 @@ function renderManejoInterno(filter){
     const tr = document.createElement('tr');
     const td = document.createElement('td');
     td.colSpan = 3;
-    td.className = 'manejo-empty';
-    td.textContent = 'Aún no hay OT que hayan completado su última revisión.';
-    tr.appendChild(td);
-    body.appendChild(tr);
+
+    if(f){
+      td.className = 'empty-state-cell';
+      td.innerHTML = 'No se encontraron OT listas para Manejo Interno con esa búsqueda.<br>' +
+        '<button class="btn btn-blanco" id="btnLimpiarFiltrosManejo">🧹 Limpiar búsqueda</button>';
+      tr.appendChild(td);
+      body.appendChild(tr);
+      const btnLimpiar = document.getElementById('btnLimpiarFiltrosManejo');
+      if(btnLimpiar) btnLimpiar.addEventListener('click', limpiarFiltrosManejo);
+    }else{
+      td.className = 'manejo-empty';
+      td.textContent = 'Aún no hay OT que hayan completado su última revisión.';
+      tr.appendChild(td);
+      body.appendChild(tr);
+    }
     actualizarBottomScrollbar();
     return;
   }
 
   itemsListos.forEach(item=>{
     const tr = document.createElement('tr');
+    if(item.ot === otRecienteActiva) tr.classList.add('active-row');
 
     const tdOt = document.createElement('td');
     tdOt.className = 'sticky-col ot-cell';
@@ -2812,6 +3317,7 @@ document.querySelectorAll('.tab-btn').forEach(btn=>{
       resizeCharts();
     }
     actualizarBottomScrollbar();
+    guardarUltimaVista();
   });
 });
 
@@ -2881,7 +3387,7 @@ document.getElementById('btnExportXLSX').addEventListener('click', ()=>{
   const docsRows = [];
   const header1 = ['OT','Permiso'];
   for(let i=1;i<=NUM_DOCS;i++) header1.push('D'+i);
-  header1.push('Listos','Faltantes');
+  header1.push('Listos','Faltantes','Comentario general');
   docsRows.push(header1);
 
   itemsGrupo.forEach(item=>{
@@ -2895,6 +3401,7 @@ document.getElementById('btnExportXLSX').addEventListener('click', ()=>{
     const { listos, faltantes } = calcListosFaltantes(item.ot);
     row.push(formatoCelda(listos));
     row.push(formatoCelda(faltantes));
+    row.push((state.comentariosGenerales && state.comentariosGenerales[item.ot]) || '');
     docsRows.push(row);
   });
   const wsDocs = XLSX.utils.aoa_to_sheet(docsRows);
@@ -3015,6 +3522,11 @@ document.getElementById('btnExportPDF').addEventListener('click', ()=>{
    IMPORTAR LISTA DESDE EXCEL (.xlsx / .xls)
    Formato esperado (primera fila = encabezados, sin importar
    mayúsculas/minúsculas): Grupo | OT | Permiso
+
+   REGLA CLAVE: si la OT ya existe en el catálogo, se actualizan
+   permiso/grupo y se RESETEA POR COMPLETO su información de
+   Documentos (D1-D22) y Revisiones (vuelve a 1 revisión vacía).
+   Las OT que no vienen en el Excel NO se tocan ni se borran.
 ===================================================== */
 function encontrarIndiceColumna(headerRow, nombresPosibles){
   for(let i=0;i<headerRow.length;i++){
@@ -3072,39 +3584,49 @@ function calcularResumenImportacion(filas){
   let nuevas = 0;
   let actualizadas = 0;
   const gruposVistos = new Set();
+  const otsVistos = new Set();
 
   filas.forEach(fila=>{
+    if(otsVistos.has(fila.ot)) return; // evita contar dos veces una OT duplicada en el mismo Excel
+    otsVistos.add(fila.ot);
     gruposVistos.add(fila.grupo);
-    const existente = itemsPorOt.get(fila.ot);
-    if(existente){
-      if(existente.permiso !== fila.permiso || existente.grupo !== fila.grupo){
-        actualizadas++;
-      }
-    }else{
-      nuevas++;
-    }
+    if(itemsPorOt.has(fila.ot)) actualizadas++;
+    else nuevas++;
   });
 
   return { nuevas, actualizadas, totalGrupos: gruposVistos.size, totalFilas: filas.length };
 }
 
-// Aplica las filas importadas sobre state: actualiza OTs existentes,
-// agrega OTs nuevas, y NUNCA borra docs/revs de una OT existente.
-// Devuelve además la lista de OT NUEVAS agregadas (para poder deshacer).
+// Aplica las filas importadas sobre state:
+// - OT nueva: se agrega al catálogo con Documentos/Revisiones vacíos.
+// - OT existente: se actualizan permiso y grupo, y se RESETEA POR
+//   COMPLETO su información de Documentos y Revisiones.
+// NUNCA se borran otras OT que no vengan en el Excel.
 function aplicarImportacionExcel(filas){
   const gruposVistos = new Set();
   const itemsPorOt = new Map();
   state.items.forEach(item=> itemsPorOt.set(item.ot, item));
   const otsNuevas = [];
+  const otsActualizadas = [];
+  const procesadas = new Set();
 
   filas.forEach(fila=>{
+    if(procesadas.has(fila.ot)) return; // si el Excel trae la misma OT repetida, se toma la primera aparición
+    procesadas.add(fila.ot);
     gruposVistos.add(fila.grupo);
     const existente = itemsPorOt.get(fila.ot);
 
+    if(!state.comentariosGenerales) state.comentariosGenerales = {};
+
     if(existente){
-      // OT ya existe: se actualizan permiso y grupo, se conservan docs/revs.
+      // OT ya existe: se actualizan permiso y grupo, y se resetea D1-D22
+      // (estado, marcas y comentarios) más las revisiones a 1 vacía.
       existente.permiso = fila.permiso;
       existente.grupo = fila.grupo;
+      state.docs[fila.ot] = Array.from({length:NUM_DOCS}, ()=>({ estado:null, comentario:'', usuario:null }));
+      state.revs[fila.ot] = [ { checked:false, fecha:'' } ];
+      state.comentariosGenerales[fila.ot] = '';
+      otsActualizadas.push(fila.ot);
     }else{
       // OT nueva: se agrega al catálogo y se inicializan sus datos.
       const nuevoItem = { ot: fila.ot, permiso: fila.permiso, grupo: fila.grupo };
@@ -3112,21 +3634,29 @@ function aplicarImportacionExcel(filas){
       itemsPorOt.set(fila.ot, nuevoItem);
       state.docs[fila.ot] = Array.from({length:NUM_DOCS}, ()=>({ estado:null, comentario:'', usuario:null }));
       state.revs[fila.ot] = [ { checked:false, fecha:'' } ];
+      state.comentariosGenerales[fila.ot] = '';
       otsNuevas.push(fila.ot);
     }
   });
 
-  // Guarda snapshot de la última importación (solo las OT nuevas) para
-  // poder deshacerla después. No afecta OTs que ya existían.
+  // Guarda snapshot de la última importación para poder deshacerla:
+  // "Deshacer" solo quita las OT que fueron NUEVAS en esa importación
+  // (las OT existentes que se resetearon no se pueden revertir).
   state.ultimaImportacion = {
     otsNuevas,
+    otsActualizadas,
     fecha: fechaHoraLegible(),
     usuario: usuarioActual || '—',
-    totalOT: filas.length,
+    totalOT: otsNuevas.length + otsActualizadas.length,
     totalGrupos: gruposVistos.size
   };
 
-  return { totalOT: filas.length, totalGrupos: gruposVistos.size };
+  return {
+    totalOT: otsNuevas.length + otsActualizadas.length,
+    totalGrupos: gruposVistos.size,
+    nuevas: otsNuevas.length,
+    actualizadas: otsActualizadas.length
+  };
 }
 
 // Archivo temporalmente leído (esperando confirmación en el modal de vista previa).
@@ -3188,10 +3718,13 @@ function manejarArchivoImportado(file){
 function mostrarVistaPreviaImportacion(resumen){
   const html = `
     <h2>📥 Vista previa de importación</h2>
-    <div class="resumen-linea"><span>OT nuevas</span><b>${resumen.nuevas}</b></div>
-    <div class="resumen-linea"><span>OT existentes que se actualizarán</span><b>${resumen.actualizadas}</b></div>
+    <div class="resumen-linea"><span>🆕 OT nuevas (se crean vacías)</span><b>${resumen.nuevas}</b></div>
+    <div class="resumen-linea"><span>♻️ OT existentes: se ACTUALIZARÁN y se RESETEARÁN (marcas + revisiones)</span><b>${resumen.actualizadas}</b></div>
     <div class="resumen-linea"><span>Grupos detectados</span><b>${resumen.totalGrupos}</b></div>
     <div class="resumen-linea"><span>Total de filas leídas</span><b>${resumen.totalFilas}</b></div>
+    <p style="font-size:12px;color:var(--texto-suave);margin:10px 0 0 0;">
+      Las OT existentes que se reimporten perderán sus marcas de D1–D22, comentarios y revisiones actuales (vuelven a quedar vacías). Las demás OT que no aparezcan en este Excel no se modifican.
+    </p>
     <div class="generic-modal-actions">
       <button class="btn btn-blanco" id="btnCancelarImportacion">Cancelar</button>
       <button class="btn btn-verde" id="btnConfirmarImportacion">Confirmar importación</button>
@@ -3211,16 +3744,16 @@ function confirmarImportacionPendiente(){
   importacionPendiente = null;
   ocultarModalGenerico();
 
-  const { totalOT, totalGrupos } = aplicarImportacionExcel(filas);
+  const resultado = aplicarImportacionExcel(filas);
 
   recalcularGrupos();
-  registrarActividad(`${usuarioActual||'Alguien'} importó lista (${state.ultimaImportacion ? state.ultimaImportacion.otsNuevas.length : 0} OT nuevas)`);
+  registrarActividad(`${usuarioActual||'Alguien'} importó lista (${resultado.nuevas} nuevas, ${resultado.actualizadas} actualizadas y reseteadas)`);
   guardarEstado(true);
   poblarSelectGrupos();
   renderAll();
   actualizarEstadoBotonDeshacer();
 
-  mostrarExito('Lista importada: ' + totalOT + ' OT, ' + totalGrupos + ' grupos.', 'Importación completada');
+  mostrarExito(resultado.nuevas + ' OT nuevas y ' + resultado.actualizadas + ' OT existentes actualizadas y reseteadas, en ' + resultado.totalGrupos + ' grupo(s).', 'Importación completada');
 }
 
 document.getElementById('btnImportarExcel').addEventListener('click', ()=>{
@@ -3235,6 +3768,8 @@ document.getElementById('inputImportarExcel').addEventListener('change', (e)=>{
 
 /* =====================================================
    DESHACER ÚLTIMA IMPORTACIÓN (solo Juan y Judith)
+   Solo quita las OT que fueron NUEVAS en esa importación; las OT que
+   ya existían y se resetearon durante la importación NO se revierten.
 ===================================================== */
 function actualizarEstadoBotonDeshacer(){
   const btn = document.getElementById('btnDeshacerImportacion');
@@ -3242,7 +3777,7 @@ function actualizarEstadoBotonDeshacer(){
   const hayAlgoQueDeshacer = !!(state && state.ultimaImportacion && Array.isArray(state.ultimaImportacion.otsNuevas) && state.ultimaImportacion.otsNuevas.length);
   btn.disabled = !hayAlgoQueDeshacer;
   btn.title = hayAlgoQueDeshacer
-    ? 'Quita las ' + state.ultimaImportacion.otsNuevas.length + ' OT agregadas en la última importación'
+    ? 'Quita las ' + state.ultimaImportacion.otsNuevas.length + ' OT nuevas agregadas en la última importación'
     : 'No hay ninguna importación reciente que deshacer';
 }
 
@@ -3253,13 +3788,14 @@ function deshacerUltimaImportacion(){
     return;
   }
   const otsNuevas = state.ultimaImportacion.otsNuevas;
-  if(!confirm('¿Deshacer la última importación? Se quitarán ' + otsNuevas.length + ' OT nuevas agregadas por esa importación. Las OT que ya existían antes no se verán afectadas.')) return;
+  if(!confirm('¿Deshacer la última importación? Se quitarán ' + otsNuevas.length + ' OT nuevas agregadas por esa importación. Las OT que ya existían antes (incluidas las que se resetearon) no se ven afectadas.')) return;
 
   const setOts = new Set(otsNuevas);
   state.items = state.items.filter(item=> !setOts.has(item.ot));
   otsNuevas.forEach(ot=>{
     delete state.docs[ot];
     delete state.revs[ot];
+    if(state.comentariosGenerales) delete state.comentariosGenerales[ot];
   });
 
   registrarActividad(`${usuarioActual||'Alguien'} deshizo la última importación (${otsNuevas.length} OT eliminadas)`);
@@ -3274,6 +3810,83 @@ function deshacerUltimaImportacion(){
 }
 
 document.getElementById('btnDeshacerImportacion').addEventListener('click', deshacerUltimaImportacion);
+
+/* =====================================================
+   COMPARAR DOS GRUPOS (solo lectura)
+===================================================== */
+function statsDeGrupo(grupo){
+  const items = (grupo === GRUPO_TODOS ? state.items : state.items.filter(i=>i.grupo===grupo)).slice().sort(compararOT);
+  const total = items.length;
+  let completos=0, conFaltantes=0, sinRevisar=0, listosManejo=0, okTotal=0;
+  const totalDocsPosibles = total * NUM_DOCS;
+  items.forEach(item=>{
+    const arr = state.docs[item.ot];
+    const ok = arr.filter(v=>v.estado==='ok').length;
+    const bad = arr.filter(v=>v.estado==='bad').length;
+    okTotal += ok;
+    if(ok===NUM_DOCS) completos++;
+    else if(bad>0) conFaltantes++;
+    if(ok===0 && bad===0) sinRevisar++;
+    if(estaListaParaManejoInterno(item.ot)) listosManejo++;
+  });
+  const pct = totalDocsPosibles>0 ? Math.round((okTotal/totalDocsPosibles)*1000)/10 : 0;
+  return { total, completos, conFaltantes, sinRevisar, listosManejo, pct };
+}
+
+function actualizarComparacion(){
+  const selA = document.getElementById('compareGrupoA');
+  const selB = document.getElementById('compareGrupoB');
+  if(!selA || !selB) return;
+  const a = statsDeGrupo(selA.value);
+  const b = statsDeGrupo(selB.value);
+  const nombreA = selA.options[selA.selectedIndex].textContent;
+  const nombreB = selB.options[selB.selectedIndex].textContent;
+  const resultadoEl = document.getElementById('compareResultado');
+  if(!resultadoEl) return;
+  resultadoEl.innerHTML = `
+    <table style="width:100%;border-collapse:collapse;font-size:12.5px;margin-top:10px;">
+      <tr>
+        <th style="text-align:left;padding:6px;color:var(--texto-suave);font-size:11px;">Métrica</th>
+        <th style="padding:6px;color:var(--azul-oscuro);">${nombreA}</th>
+        <th style="padding:6px;color:var(--azul-oscuro);">${nombreB}</th>
+      </tr>
+      <tr><td style="padding:6px;">Total OT</td><td style="text-align:center;">${a.total}</td><td style="text-align:center;">${b.total}</td></tr>
+      <tr><td style="padding:6px;">% cumplimiento</td><td style="text-align:center;">${a.pct}%</td><td style="text-align:center;">${b.pct}%</td></tr>
+      <tr><td style="padding:6px;">Completos</td><td style="text-align:center;color:var(--verde);">${a.completos}</td><td style="text-align:center;color:var(--verde);">${b.completos}</td></tr>
+      <tr><td style="padding:6px;">Con faltantes</td><td style="text-align:center;color:var(--rojo);">${a.conFaltantes}</td><td style="text-align:center;color:var(--rojo);">${b.conFaltantes}</td></tr>
+      <tr><td style="padding:6px;">Sin revisar</td><td style="text-align:center;">${a.sinRevisar}</td><td style="text-align:center;">${b.sinRevisar}</td></tr>
+      <tr><td style="padding:6px;">Listas para Manejo Interno</td><td style="text-align:center;">${a.listosManejo}</td><td style="text-align:center;">${b.listosManejo}</td></tr>
+    </table>
+  `;
+}
+
+function abrirCompararGrupos(){
+  const opciones = `<option value="${GRUPO_TODOS}">Todos</option>` + GRUPOS.map(g=>`<option value="${g}">${g}</option>`).join('');
+  const html = `
+    <h2>📊 Comparar grupos (solo lectura)</h2>
+    <div style="display:flex;gap:10px;margin-bottom:8px;">
+      <select id="compareGrupoA" class="grupo-select" style="flex:1;">${opciones}</select>
+      <select id="compareGrupoB" class="grupo-select" style="flex:1;">${opciones}</select>
+    </div>
+    <div id="compareResultado"></div>
+    <div class="generic-modal-actions">
+      <button class="btn btn-blanco" id="btnCerrarComparar">Cerrar</button>
+    </div>
+  `;
+  mostrarModalGenerico(html);
+  const selA = document.getElementById('compareGrupoA');
+  const selB = document.getElementById('compareGrupoB');
+  if(GRUPOS.length > 1){
+    selA.value = GRUPOS[0];
+    selB.value = GRUPOS[1];
+  }
+  selA.addEventListener('change', actualizarComparacion);
+  selB.addEventListener('change', actualizarComparacion);
+  actualizarComparacion();
+  document.getElementById('btnCerrarComparar').addEventListener('click', ocultarModalGenerico);
+}
+
+document.getElementById('btnCompararGrupos').addEventListener('click', abrirCompararGrupos);
 
 /* =====================================================
    RESUMEN AL ENTRAR
@@ -3329,6 +3942,7 @@ function renderAll(){
   renderManejoInterno(document.getElementById('searchManejo') ? document.getElementById('searchManejo').value : '');
   document.getElementById('maxRevInput').value = state.maxRevisiones;
   renderActivityPanel();
+  actualizarAlturaHeader();
 }
 
 // Inicializa la app (carga Firebase + primer render). Solo se llama
@@ -3339,8 +3953,10 @@ async function iniciarApp(mostrarResumen){
   renderAll();
   actualizarBadgeUsuario();
   initScrollSync();
+  actualizarAlturaHeader();
   actualizarBottomScrollbar();
   resizeCharts();
+  restaurarUltimaVista();
   window.addEventListener('load', resizeCharts);
   if(mostrarResumen){
     setTimeout(mostrarResumenAlEntrar, 250);
@@ -3350,6 +3966,7 @@ async function iniciarApp(mostrarResumen){
 (function iniciar(){
   actualizarBadgeUsuario();
   cargarTemaUsuario(); // aplica el modo claro/oscuro guardado (o "claro" por defecto)
+  cargarCompactUsuario(); // aplica el modo compacto guardado (o "normal" por defecto)
   if(usuarioActual){
     // Ya había un usuario guardado en este navegador: se salta el login.
     document.getElementById('loadingOverlay').style.display = 'flex';
