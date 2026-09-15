@@ -289,14 +289,20 @@
   }
 
   .table-wrap{
-    overflow:auto;
+    /* Solo scroll horizontal (la barra azul inferior lo controla).
+       Sin max-height ni overflow-y: la página scrollea en vertical
+       y se ven muchas más filas; así se evita el temblor del sticky
+       en dos ejes dentro del mismo recuadro. */
+    overflow-x:auto;
+    overflow-y:visible;
+    max-height:none;
     border-radius:10px;
     border:1px solid var(--gris-borde);
     -webkit-overflow-scrolling:touch;
-    /* La altura máxima real la fija JS (actualizarAlturaTablas) según el
-       espacio disponible en pantalla; este valor es solo un respaldo
-       por si JS aún no corrió. */
-    max-height: calc(100vh - 220px);
+    scrollbar-width:none; /* Firefox: oculta scrollbar nativa */
+  }
+  .table-wrap::-webkit-scrollbar{
+    display:none; /* Chrome/Safari: oculta scrollbar nativa */
   }
   table{
     border-collapse:collapse;
@@ -311,40 +317,34 @@
     text-align:center;
     font-weight:600;
   }
-  thead tr:first-child th{
-    position:sticky;
-    top:0;
-    z-index:22;
-  }
+  /* Sin sticky vertical en thead: el scroll vertical es de la página.
+     El sticky solo horizontal (OT / Permiso) evita el tapado y el temblor. */
   thead tr.sub-head th{
     background:#2A8E95;
     font-size:11px;
     padding:5px;
-    position:sticky;
-    top:var(--head-row1-height, 36px);
-    z-index:21;
   }
   th.sticky-col, td.sticky-col{
     position:sticky;
     left:0;
     background:#fff;
-    z-index:10;
-    /* Borde en vez de box-shadow: menos repaints al scrollear en horizontal */
+    z-index:12;
     box-shadow:none;
     border-right:1px solid var(--gris-borde);
   }
   th.sticky-col2, td.sticky-col2{
     position:sticky;
-    /* Ancho real de la col OT (lo actualiza JS); evita left:70px fijo */
     left:var(--sticky-col1-width, 70px);
     background:#fff;
-    z-index:10;
+    z-index:12;
     box-shadow:none;
     border-right:1px solid var(--gris-borde);
   }
   thead th.sticky-col, thead th.sticky-col2{
     background:var(--azul-oscuro);
-    z-index:23;
+    z-index:14;
+    /* Asegura que el texto del encabezado no quede tapado al scrollear */
+    vertical-align:middle;
   }
   tbody tr:nth-child(even) td:not(.sticky-col):not(.sticky-col2){background:#F8FBFB;}
   tbody tr:nth-child(even) td.sticky-col, tbody tr:nth-child(even) td.sticky-col2{background:#F8FBFB;}
@@ -539,7 +539,7 @@
     min-width:220px;
     display:flex;
     flex-direction:column;
-    height:195px;
+    height:160px;
   }
   .chart-card-title{
     font-size:11px;
@@ -553,7 +553,7 @@
   .chart-canvas-wrap{
     position:relative;
     width:100%;
-    height:155px;
+    height:120px;
     flex:0 0 auto;
   }
   .chart-canvas-wrap canvas{
@@ -958,8 +958,8 @@
   body.compact-mode .comment-general-input{width:130px;}
   body.compact-mode td.ot-cell{font-size:13px;}
   body.compact-mode .stat-card{padding:6px 10px;}
-  body.compact-mode .chart-card{height:165px;}
-  body.compact-mode .chart-canvas-wrap{height:125px;}
+  body.compact-mode .chart-card{height:140px;}
+  body.compact-mode .chart-canvas-wrap{height:100px;}
 
   /* ===================== MODO OSCURO ===================== */
   body.dark-mode{
@@ -1086,8 +1086,8 @@
     .chk{width:22px;height:22px;font-size:12px;}
     .docs-top-row{flex-direction:column;}
     .charts-bar{flex-direction:column;}
-    .chart-card{height:220px;}
-    .chart-canvas-wrap{height:180px;}
+    .chart-card{height:190px;}
+    .chart-canvas-wrap{height:150px;}
     .activity-panel{width:100vw;}
     .menu-list{min-width:210px;}
   }
@@ -2280,26 +2280,15 @@ function actualizarAlturaHeader(){
 window.addEventListener('resize', actualizarAlturaHeader);
 
 /* =====================================================
-   ALTURA DE LA TABLA ACTIVA
-   Cada .table-wrap es ahora su propio contenedor de scroll (vertical y
-   horizontal), y el thead queda "sticky" con top:0 relativo a ESE
-   contenedor (no a la ventana completa). Así el encabezado de la tabla
-   se mantiene fijo justo arriba de las filas visibles, sin depender de
-   la altura del header de la página ni de la barra de pestañas (que ya
-   no es sticky). Esta función calcula cuánto espacio vertical le queda
-   disponible en pantalla al table-wrap actualmente visible.
+   ALTURA DE LA TABLA
+   Ya no se limita la altura del .table-wrap: el scroll vertical es el
+   de la página (así se ven muchas más filas y no tiembla el sticky).
+   Esta función solo limpia cualquier max-height inline viejo.
 ===================================================== */
 function actualizarAlturaTablas(){
-  const wrap = getActiveTableWrap();
-  if(!wrap) return;
-  // Si el panel está oculto (display:none) las medidas salen en 0; no tocar.
-  if(wrap.offsetParent === null) return;
-  const rect = wrap.getBoundingClientRect();
-  // Solo reserva la barra de scroll inferior fija (~16px) + 2px de aire.
-  const margenInferior = 18;
-  const disponible = window.innerHeight - rect.top - margenInferior;
-  const minimo = 260;
-  wrap.style.maxHeight = Math.max(minimo, disponible) + 'px';
+  document.querySelectorAll('.table-wrap').forEach(wrap=>{
+    wrap.style.maxHeight = '';
+  });
 }
 
 /* =====================================================
@@ -2315,10 +2304,6 @@ document.getElementById('btnBackToTop').addEventListener('click', ()=>{
   const tab = activeBtn ? activeBtn.dataset.tab : 'docs';
   const panel = document.getElementById('panel-' + tab);
   (panel || document.body).scrollIntoView({ behavior:'smooth', block:'start' });
-  // La tabla activa ahora tiene su propio scroll interno: también se
-  // regresa esa área al inicio.
-  const wrap = getActiveTableWrap();
-  if(wrap) wrap.scrollTop = 0;
 });
 
 /* =====================================================
@@ -3441,28 +3426,11 @@ document.getElementById('btnExportPNG').addEventListener('click', ()=>{
   if(activeTab==='revs') target = document.getElementById('panel-revs');
   else if(activeTab==='manejo') target = document.getElementById('panel-manejo');
 
-  // La tabla activa ahora tiene su propio scroll interno (altura limitada)
-  // para que el encabezado quede fijo; para que la captura PNG incluya
-  // la tabla completa (no solo la parte visible), se anula temporalmente
-  // ese límite mientras se genera la imagen.
-  const wrap = getActiveTableWrap();
-  const prevMaxHeight = wrap ? wrap.style.maxHeight : null;
-  const prevOverflow = wrap ? wrap.style.overflow : null;
-  if(wrap){
-    wrap.style.maxHeight = 'none';
-    wrap.style.overflow = 'visible';
-  }
-
   html2canvas(target, { scale:2, backgroundColor:'#ffffff' }).then(canvas=>{
     const link = document.createElement('a');
     link.download = 'revision_documental_'+activeTab+'.png';
     link.href = canvas.toDataURL('image/png');
     link.click();
-  }).finally(()=>{
-    if(wrap){
-      wrap.style.maxHeight = prevMaxHeight || '';
-      wrap.style.overflow = prevOverflow || '';
-    }
   });
 });
 
