@@ -289,21 +289,17 @@
   }
 
   .table-wrap{
-    /* Contenedor con scroll propio: ~10 filas (altura real la fija JS).
-       Horizontal: barra azul inferior (se oculta la nativa horizontal).
-       Vertical: scrollbar del propio recuadro. */
+    /* Contenedor con scroll propio (filas visibles según pestaña, las fija JS).
+       Horizontal y vertical: scrollbars del propio recuadro. */
     overflow:auto;
     border-radius:10px;
     border:1px solid var(--gris-borde);
     -webkit-overflow-scrolling:touch;
     max-height: calc(100vh - 280px); /* respaldo antes de que corra JS */
   }
-  /* Oculta solo la barra horizontal nativa; la vertical sí se ve */
-  .table-wrap::-webkit-scrollbar:horizontal{
-    height:0;
-  }
-  .table-wrap::-webkit-scrollbar:vertical{
+  .table-wrap::-webkit-scrollbar{
     width:10px;
+    height:10px;
   }
   .table-wrap::-webkit-scrollbar-thumb{
     background:var(--azul-oscuro);
@@ -908,24 +904,6 @@
     color:var(--texto-suave);
   }
 
-  .bottom-scrollbar{
-    position:fixed;
-    left:0;
-    right:0;
-    bottom:0;
-    height:16px;
-    overflow-x:auto;
-    overflow-y:hidden;
-    background:#fff;
-    border-top:1.5px solid var(--gris-borde);
-    box-shadow:0 -2px 8px rgba(0,0,0,0.08);
-    z-index:400;
-    -webkit-overflow-scrolling:touch;
-  }
-  .bottom-scrollbar::-webkit-scrollbar{height:14px;}
-  .bottom-scrollbar::-webkit-scrollbar-track{background:var(--gris-fondo);}
-  .bottom-scrollbar::-webkit-scrollbar-thumb{background:var(--azul-oscuro);border-radius:7px;}
-  #bottomScrollbarInner{height:1px;}
 
   /* ===================== BOTÓN VOLVER ARRIBA ===================== */
   .back-to-top{
@@ -1076,13 +1054,6 @@
   }
   body.dark-mode .activity-item{
     border-color: var(--gris-borde);
-  }
-  body.dark-mode .bottom-scrollbar{
-    background: #1E2A2D;
-    border-top-color: var(--gris-borde);
-  }
-  body.dark-mode .bottom-scrollbar::-webkit-scrollbar-track{
-    background: #1E2A2D;
   }
   body.dark-mode .btn-copiar{
     background: #263437;
@@ -1346,10 +1317,6 @@
 
 <footer>Revisión Documental · datos sincronizados automáticamente con Firebase Firestore</footer>
 
-<!-- Barra de scroll horizontal fija (siempre visible, sincronizada con la tabla activa) -->
-<div class="bottom-scrollbar" id="bottomScrollbar">
-  <div id="bottomScrollbarInner"></div>
-</div>
 
 <script>
 /* =====================================================
@@ -2248,7 +2215,6 @@ function aplicarCompact(activo){
   const span = document.getElementById('compactModeState');
   if(span) span.textContent = activo ? 'Compacto' : 'Normal';
   actualizarAlturaHeader();
-  actualizarBottomScrollbar();
 }
 
 function cargarCompactUsuario(){
@@ -2301,14 +2267,24 @@ function actualizarAlturaHeader(){
   }
   actualizarAnchosSticky();
   actualizarAlturaTablas();
-  actualizarBottomScrollbar();
 }
 window.addEventListener('resize', actualizarAlturaHeader);
 
 /* =====================================================
-   ALTURA DE LA TABLA ACTIVA (~10 filas visibles)
+   ALTURA DE LA TABLA ACTIVA
+   Documentos: ~10 filas · Revisiones / Manejo Interno: ~25 filas
 ===================================================== */
-const FILAS_TABLA_VISIBLE = 10;
+const FILAS_VISIBLE_POR_TAB = {
+  docs: 10,
+  revs: 25,
+  manejo: 25
+};
+
+function filasVisiblesTabActiva(){
+  const activeBtn = document.querySelector('.tab-btn.active');
+  const tab = activeBtn ? activeBtn.dataset.tab : 'docs';
+  return FILAS_VISIBLE_POR_TAB[tab] || 10;
+}
 
 function actualizarAlturaTablas(){
   const wrap = getActiveTableWrap();
@@ -2320,7 +2296,7 @@ function actualizarAlturaTablas(){
   const headH = thead ? thead.offsetHeight : 64;
   // Si no hay filas aún, usa una estimación razonable por fila.
   const rowH = fila ? Math.max(fila.offsetHeight, 36) : 52;
-  const alto = headH + (rowH * FILAS_TABLA_VISIBLE) + 2;
+  const alto = headH + (rowH * filasVisiblesTabActiva()) + 2;
   wrap.style.maxHeight = alto + 'px';
 }
 
@@ -2356,7 +2332,7 @@ function marcarOTActiva(ot){
 }
 
 /* =====================================================
-   BARRA DE SCROLL HORIZONTAL FIJA (sincronizada)
+   TABLA ACTIVA + ANCHOS STICKY
 ===================================================== */
 function getActiveTableWrap(){
   const activeBtn = document.querySelector('.tab-btn.active');
@@ -2378,85 +2354,18 @@ function actualizarAnchosSticky(){
   }
 }
 
-// Sync horizontal optimizado: un solo rAF por frame (sin ping-pong ni flag lento).
-let scrollSyncRaf = 0;
-let scrollSyncFrom = null; // 'bar' | 'wrap'
-let scrollSyncLeft = 0;
-
-function pedirSyncScroll(origen, left){
-  scrollSyncFrom = origen;
-  scrollSyncLeft = left;
-  if(scrollSyncRaf) return;
-  scrollSyncRaf = requestAnimationFrame(()=>{
-    scrollSyncRaf = 0;
-    const wrap = getActiveTableWrap();
-    const bar = document.getElementById('bottomScrollbar');
-    if(!wrap || !bar) return;
-    const left = scrollSyncLeft;
-    const from = scrollSyncFrom;
-    scrollSyncFrom = null;
-    if(from === 'bar'){
-      if(wrap.scrollLeft !== left) wrap.scrollLeft = left;
-    }else if(from === 'wrap'){
-      if(bar.scrollLeft !== left) bar.scrollLeft = left;
-    }
-  });
-}
-
-function actualizarBottomScrollbar(){
-  requestAnimationFrame(()=>{
-    const wrap = getActiveTableWrap();
-    const bar = document.getElementById('bottomScrollbar');
-    const inner = document.getElementById('bottomScrollbarInner');
-    if(!wrap || !bar || !inner) return;
-    const table = wrap.querySelector('table');
-    if(!table) return;
-
-    const rect = wrap.getBoundingClientRect();
-    bar.style.left = rect.left + 'px';
-    bar.style.width = rect.width + 'px';
-
-    const anchoReal = table.scrollWidth;
-    inner.style.width = anchoReal + 'px';
-    bar.style.display = (anchoReal > rect.width + 1) ? 'block' : 'none';
-
-    if(bar.scrollLeft !== wrap.scrollLeft) bar.scrollLeft = wrap.scrollLeft;
-  });
-}
-
-function initScrollSync(){
-  const bar = document.getElementById('bottomScrollbar');
-  const wrapDocs = document.getElementById('tableWrapDocs');
-  const wrapRevs = document.getElementById('tableWrapRevs');
-  const wrapManejo = document.getElementById('tableWrapManejo');
-
-  bar.addEventListener('scroll', ()=>{
-    pedirSyncScroll('bar', bar.scrollLeft);
-  }, { passive:true });
-
-  [wrapDocs, wrapRevs, wrapManejo].forEach(wrap=>{
-    if(!wrap) return;
-    wrap.addEventListener('scroll', ()=>{
-      if(wrap !== getActiveTableWrap()) return;
-      // Solo sincroniza el eje X con la barra azul (ignora scroll vertical del wrap)
-      pedirSyncScroll('wrap', wrap.scrollLeft);
-    }, { passive:true });
-  });
-
+function initTablaLayout(){
   window.addEventListener('resize', ()=>{
     actualizarAnchosSticky();
     actualizarAlturaTablas();
-    actualizarBottomScrollbar();
   });
   window.addEventListener('orientationchange', ()=>{
     actualizarAnchosSticky();
     actualizarAlturaTablas();
-    actualizarBottomScrollbar();
   });
   window.addEventListener('load', ()=>{
     actualizarAnchosSticky();
     actualizarAlturaTablas();
-    actualizarBottomScrollbar();
   });
 }
 
@@ -2833,7 +2742,6 @@ function renderDocsBody(filter){
     if(btnLimpiar) btnLimpiar.addEventListener('click', limpiarFiltrosDocs);
   }
 
-  actualizarBottomScrollbar();
 }
 
 function renderStats(){
@@ -3330,7 +3238,6 @@ function renderRevsBody(filter){
     if(btnLimpiar) btnLimpiar.addEventListener('click', limpiarFiltrosRevs);
   }
 
-  actualizarBottomScrollbar();
 }
 
 /* =====================================================
@@ -3377,8 +3284,7 @@ function renderManejoInterno(filter){
       tr.appendChild(td);
       body.appendChild(tr);
     }
-    actualizarBottomScrollbar();
-    return;
+      return;
   }
 
   itemsListos.forEach(item=>{
@@ -3403,7 +3309,6 @@ function renderManejoInterno(filter){
     body.appendChild(tr);
   });
 
-  actualizarBottomScrollbar();
 }
 
 /* =====================================================
@@ -3425,8 +3330,7 @@ document.querySelectorAll('.tab-btn').forEach(btn=>{
       resizeCharts();
     }
     actualizarAlturaTablas();
-    actualizarBottomScrollbar();
-    guardarUltimaVista();
+      guardarUltimaVista();
   });
 });
 
@@ -4068,9 +3972,8 @@ async function iniciarApp(mostrarResumen){
   await cargarEstado();
   renderAll();
   actualizarBadgeUsuario();
-  initScrollSync();
+  initTablaLayout();
   actualizarAlturaHeader();
-  actualizarBottomScrollbar();
   resizeCharts();
   restaurarUltimaVista();
   window.addEventListener('load', resizeCharts);
