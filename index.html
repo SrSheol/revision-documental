@@ -2845,14 +2845,20 @@ const barValueLabelsPlugin = {
     const colores = coloresGrafica();
 
     ctx.save();
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'bottom';
+    // Porcentajes en vertical (rotado -90°) encima de cada barra,
+    // para que se lean mejor sin chocar entre sí.
     ctx.font = '700 9px Segoe UI, Roboto, Helvetica, Arial, sans-serif';
     ctx.fillStyle = colores.barLabel;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
     meta.data.forEach((bar, idx)=>{
       const valor = valores[idx] || 0;
       const texto = valor.toFixed(1).replace('.0','') + '%';
-      ctx.fillText(texto, bar.x, bar.y - 4);
+      ctx.save();
+      ctx.translate(bar.x, bar.y - 6);
+      ctx.rotate(-Math.PI / 2);
+      ctx.fillText(texto, 0, 0);
+      ctx.restore();
     });
     ctx.restore();
   }
@@ -3005,7 +3011,7 @@ function renderChartFaltantes(badPorDoc, totalOT){
         responsive: true,
         maintainAspectRatio: false,
         animation: { duration: 300 },
-        layout: { padding: { top: 18 } },
+        layout: { padding: { top: 36 } },
         scales: {
           x: {
             ticks: { font: { size: 10 }, color: colores.tick },
