@@ -48,6 +48,7 @@
     --blanco: #FFFFFF;
     --header-height: 64px;
     --head-row1-height: 36px;
+    --sticky-col1-width: 70px;
   }
   *{box-sizing:border-box;}
   body{
@@ -295,7 +296,7 @@
     /* La altura máxima real la fija JS (actualizarAlturaTablas) según el
        espacio disponible en pantalla; este valor es solo un respaldo
        por si JS aún no corrió. */
-    max-height: calc(100vh - 260px);
+    max-height: calc(100vh - 220px);
   }
   table{
     border-collapse:collapse;
@@ -328,14 +329,18 @@
     left:0;
     background:#fff;
     z-index:10;
-    box-shadow:2px 0 4px rgba(0,0,0,0.05);
+    /* Borde en vez de box-shadow: menos repaints al scrollear en horizontal */
+    box-shadow:none;
+    border-right:1px solid var(--gris-borde);
   }
   th.sticky-col2, td.sticky-col2{
     position:sticky;
-    left:70px;
+    /* Ancho real de la col OT (lo actualiza JS); evita left:70px fijo */
+    left:var(--sticky-col1-width, 70px);
     background:#fff;
     z-index:10;
-    box-shadow:2px 0 4px rgba(0,0,0,0.05);
+    box-shadow:none;
+    border-right:1px solid var(--gris-borde);
   }
   thead th.sticky-col, thead th.sticky-col2{
     background:var(--azul-oscuro);
@@ -534,7 +539,7 @@
     min-width:220px;
     display:flex;
     flex-direction:column;
-    height:230px;
+    height:195px;
   }
   .chart-card-title{
     font-size:11px;
@@ -548,7 +553,7 @@
   .chart-canvas-wrap{
     position:relative;
     width:100%;
-    height:190px;
+    height:155px;
     flex:0 0 auto;
   }
   .chart-canvas-wrap canvas{
@@ -953,8 +958,8 @@
   body.compact-mode .comment-general-input{width:130px;}
   body.compact-mode td.ot-cell{font-size:13px;}
   body.compact-mode .stat-card{padding:6px 10px;}
-  body.compact-mode .chart-card{height:190px;}
-  body.compact-mode .chart-canvas-wrap{height:150px;}
+  body.compact-mode .chart-card{height:165px;}
+  body.compact-mode .chart-canvas-wrap{height:125px;}
 
   /* ===================== MODO OSCURO ===================== */
   body.dark-mode{
@@ -1081,8 +1086,8 @@
     .chk{width:22px;height:22px;font-size:12px;}
     .docs-top-row{flex-direction:column;}
     .charts-bar{flex-direction:column;}
-    .chart-card{height:250px;}
-    .chart-canvas-wrap{height:210px;}
+    .chart-card{height:220px;}
+    .chart-canvas-wrap{height:180px;}
     .activity-panel{width:100vw;}
     .menu-list{min-width:210px;}
   }
@@ -1152,7 +1157,7 @@
     <button class="btn-tema" id="btnToggleTema" title="Cambiar modo claro/oscuro">🌙</button>
 
     <div class="menu-dropdown" id="menuExport">
-      <button class="btn btn-blanco menu-btn" data-menu="menuExport">📄 Export ▾</button>
+      <button class="btn btn-blanco menu-btn" data-menu="menuExport">📄 Exportar ▾</button>
       <div class="menu-list">
         <button class="menu-item" id="btnExportPNG">🖼️ Export PNG</button>
         <button class="menu-item" id="btnExportXLSX">📊 Export Excel</button>
@@ -1162,7 +1167,7 @@
     </div>
 
     <div class="menu-dropdown" id="menuList" style="display:none;">
-      <button class="btn btn-blanco menu-btn" data-menu="menuList">📥 List ▾</button>
+      <button class="btn btn-blanco menu-btn" data-menu="menuList">📥 Lista ▾</button>
       <div class="menu-list">
         <button class="menu-item" id="btnImportarExcel">📥 Importar lista (Excel)</button>
         <button class="menu-item" id="btnDeshacerImportacion">↩️ Deshacer última importación</button>
@@ -1171,7 +1176,7 @@
     <input type="file" id="inputImportarExcel" accept=".xlsx,.xls" style="display:none;">
 
     <div class="menu-dropdown" id="menuAnalysis">
-      <button class="btn btn-blanco menu-btn" data-menu="menuAnalysis">📊 Analysis ▾</button>
+      <button class="btn btn-blanco menu-btn" data-menu="menuAnalysis">📊 Análisis ▾</button>
       <div class="menu-list">
         <button class="menu-item" id="btnCompararGrupos">📊 Comparar grupos</button>
         <button class="menu-item" id="btnActividad">🕒 Actividad</button>
@@ -1179,7 +1184,7 @@
     </div>
 
     <div class="menu-dropdown" id="menuView">
-      <button class="btn btn-blanco menu-btn" data-menu="menuView">🎛️ View ▾</button>
+      <button class="btn btn-blanco menu-btn" data-menu="menuView">🎛️ Vista ▾</button>
       <div class="menu-list">
         <button class="menu-item" id="btnCompactMode">🔳 Modo compacto: <span id="compactModeState">Normal</span></button>
       </div>
@@ -2268,6 +2273,7 @@ function actualizarAlturaHeader(){
   if(headRow1){
     document.documentElement.style.setProperty('--head-row1-height', headRow1.offsetHeight + 'px');
   }
+  actualizarAnchosSticky();
   actualizarAlturaTablas();
   actualizarBottomScrollbar();
 }
@@ -2289,9 +2295,10 @@ function actualizarAlturaTablas(){
   // Si el panel está oculto (display:none) las medidas salen en 0; no tocar.
   if(wrap.offsetParent === null) return;
   const rect = wrap.getBoundingClientRect();
-  const margenInferior = 16;
+  // Solo reserva la barra de scroll inferior fija (~16px) + 2px de aire.
+  const margenInferior = 18;
   const disponible = window.innerHeight - rect.top - margenInferior;
-  const minimo = 220;
+  const minimo = 260;
   wrap.style.maxHeight = Math.max(minimo, disponible) + 'px';
 }
 
@@ -2341,6 +2348,25 @@ function getActiveTableWrap(){
 
 let sincronizandoScroll = false;
 
+// Libera el flag en el siguiente frame: si se pone en false al instante,
+// algunos navegadores disparan el evento scroll DESPUÉS y el sync doble
+// hace “temblar” el scroll horizontal.
+function liberarSyncScroll(){
+  requestAnimationFrame(()=>{ sincronizandoScroll = false; });
+}
+
+// Mide el ancho real de la columna OT sticky y lo usa como left de Permiso.
+function actualizarAnchosSticky(){
+  const wrap = getActiveTableWrap();
+  if(!wrap || wrap.offsetParent === null) return;
+  const col = wrap.querySelector('thead th.sticky-col');
+  if(!col) return;
+  const w = Math.ceil(col.getBoundingClientRect().width);
+  if(w > 0){
+    document.documentElement.style.setProperty('--sticky-col1-width', w + 'px');
+  }
+}
+
 function actualizarBottomScrollbar(){
   requestAnimationFrame(()=>{
     const wrap = getActiveTableWrap();
@@ -2349,6 +2375,8 @@ function actualizarBottomScrollbar(){
     if(!wrap || !bar || !inner) return;
     const table = wrap.querySelector('table');
     if(!table) return;
+
+    actualizarAnchosSticky();
 
     const rect = wrap.getBoundingClientRect();
     bar.style.left = rect.left + 'px';
@@ -2360,7 +2388,7 @@ function actualizarBottomScrollbar(){
 
     sincronizandoScroll = true;
     bar.scrollLeft = wrap.scrollLeft;
-    sincronizandoScroll = false;
+    liberarSyncScroll();
   });
 }
 
@@ -2376,8 +2404,8 @@ function initScrollSync(){
     if(!wrap) return;
     sincronizandoScroll = true;
     wrap.scrollLeft = bar.scrollLeft;
-    sincronizandoScroll = false;
-  });
+    liberarSyncScroll();
+  }, { passive:true });
 
   [wrapDocs, wrapRevs, wrapManejo].forEach(wrap=>{
     if(!wrap) return;
@@ -2386,13 +2414,22 @@ function initScrollSync(){
       if(wrap !== getActiveTableWrap()) return;
       sincronizandoScroll = true;
       bar.scrollLeft = wrap.scrollLeft;
-      sincronizandoScroll = false;
-    });
+      liberarSyncScroll();
+    }, { passive:true });
   });
 
-  window.addEventListener('resize', actualizarBottomScrollbar);
-  window.addEventListener('orientationchange', actualizarBottomScrollbar);
-  window.addEventListener('load', actualizarBottomScrollbar);
+  window.addEventListener('resize', ()=>{
+    actualizarAnchosSticky();
+    actualizarBottomScrollbar();
+  });
+  window.addEventListener('orientationchange', ()=>{
+    actualizarAnchosSticky();
+    actualizarBottomScrollbar();
+  });
+  window.addEventListener('load', ()=>{
+    actualizarAnchosSticky();
+    actualizarBottomScrollbar();
+  });
 }
 
 /* =====================================================
