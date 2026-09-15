@@ -177,9 +177,6 @@
     display:flex;
     gap:8px;
     padding:14px 24px 0 24px;
-    position:sticky;
-    top:var(--header-height, 64px);
-    z-index:60;
     background:transparent;
   }
   .tab-btn{
@@ -291,10 +288,14 @@
   }
 
   .table-wrap{
-    overflow-x:auto;
+    overflow:auto;
     border-radius:10px;
     border:1px solid var(--gris-borde);
     -webkit-overflow-scrolling:touch;
+    /* La altura máxima real la fija JS (actualizarAlturaTablas) según el
+       espacio disponible en pantalla; este valor es solo un respaldo
+       por si JS aún no corrió. */
+    max-height: calc(100vh - 260px);
   }
   table{
     border-collapse:collapse;
@@ -311,7 +312,7 @@
   }
   thead tr:first-child th{
     position:sticky;
-    top:var(--header-height, 64px);
+    top:0;
     z-index:22;
   }
   thead tr.sub-head th{
@@ -319,7 +320,7 @@
     font-size:11px;
     padding:5px;
     position:sticky;
-    top:calc(var(--header-height, 64px) + var(--head-row1-height, 36px));
+    top:var(--head-row1-height, 36px);
     z-index:21;
   }
   th.sticky-col, td.sticky-col{
@@ -2256,7 +2257,7 @@ document.querySelectorAll('.menu-item').forEach(item=>{
 });
 
 /* =====================================================
-   ALTURA DEL HEADER (para el sticky de tabs y encabezado de tabla)
+   ALTURA DEL HEADER (para el sticky del header y el encabezado de tabla)
 ===================================================== */
 function actualizarAlturaHeader(){
   const header = document.querySelector('header');
@@ -2267,9 +2268,32 @@ function actualizarAlturaHeader(){
   if(headRow1){
     document.documentElement.style.setProperty('--head-row1-height', headRow1.offsetHeight + 'px');
   }
+  actualizarAlturaTablas();
   actualizarBottomScrollbar();
 }
 window.addEventListener('resize', actualizarAlturaHeader);
+
+/* =====================================================
+   ALTURA DE LA TABLA ACTIVA
+   Cada .table-wrap es ahora su propio contenedor de scroll (vertical y
+   horizontal), y el thead queda "sticky" con top:0 relativo a ESE
+   contenedor (no a la ventana completa). Así el encabezado de la tabla
+   se mantiene fijo justo arriba de las filas visibles, sin depender de
+   la altura del header de la página ni de la barra de pestañas (que ya
+   no es sticky). Esta función calcula cuánto espacio vertical le queda
+   disponible en pantalla al table-wrap actualmente visible.
+===================================================== */
+function actualizarAlturaTablas(){
+  const wrap = getActiveTableWrap();
+  if(!wrap) return;
+  // Si el panel está oculto (display:none) las medidas salen en 0; no tocar.
+  if(wrap.offsetParent === null) return;
+  const rect = wrap.getBoundingClientRect();
+  const margenInferior = 16;
+  const disponible = window.innerHeight - rect.top - margenInferior;
+  const minimo = 220;
+  wrap.style.maxHeight = Math.max(minimo, disponible) + 'px';
+}
 
 /* =====================================================
    BOTÓN VOLVER ARRIBA
@@ -2284,6 +2308,10 @@ document.getElementById('btnBackToTop').addEventListener('click', ()=>{
   const tab = activeBtn ? activeBtn.dataset.tab : 'docs';
   const panel = document.getElementById('panel-' + tab);
   (panel || document.body).scrollIntoView({ behavior:'smooth', block:'start' });
+  // La tabla activa ahora tiene su propio scroll interno: también se
+  // regresa esa área al inicio.
+  const wrap = getActiveTableWrap();
+  if(wrap) wrap.scrollTop = 0;
 });
 
 /* =====================================================
@@ -3316,6 +3344,7 @@ document.querySelectorAll('.tab-btn').forEach(btn=>{
       renderCharts();
       resizeCharts();
     }
+    actualizarAlturaTablas();
     actualizarBottomScrollbar();
     guardarUltimaVista();
   });
@@ -3368,11 +3397,29 @@ document.getElementById('btnExportPNG').addEventListener('click', ()=>{
   let target = document.getElementById('panel-docs');
   if(activeTab==='revs') target = document.getElementById('panel-revs');
   else if(activeTab==='manejo') target = document.getElementById('panel-manejo');
+
+  // La tabla activa ahora tiene su propio scroll interno (altura limitada)
+  // para que el encabezado quede fijo; para que la captura PNG incluya
+  // la tabla completa (no solo la parte visible), se anula temporalmente
+  // ese límite mientras se genera la imagen.
+  const wrap = getActiveTableWrap();
+  const prevMaxHeight = wrap ? wrap.style.maxHeight : null;
+  const prevOverflow = wrap ? wrap.style.overflow : null;
+  if(wrap){
+    wrap.style.maxHeight = 'none';
+    wrap.style.overflow = 'visible';
+  }
+
   html2canvas(target, { scale:2, backgroundColor:'#ffffff' }).then(canvas=>{
     const link = document.createElement('a');
     link.download = 'revision_documental_'+activeTab+'.png';
     link.href = canvas.toDataURL('image/png');
     link.click();
+  }).finally(()=>{
+    if(wrap){
+      wrap.style.maxHeight = prevMaxHeight || '';
+      wrap.style.overflow = prevOverflow || '';
+    }
   });
 });
 
