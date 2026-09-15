@@ -289,20 +289,28 @@
   }
 
   .table-wrap{
-    /* Solo scroll horizontal (la barra azul inferior lo controla).
-       Sin max-height ni overflow-y: la página scrollea en vertical
-       y se ven muchas más filas; así se evita el temblor del sticky
-       en dos ejes dentro del mismo recuadro. */
-    overflow-x:auto;
-    overflow-y:visible;
-    max-height:none;
+    /* Contenedor con scroll propio: ~10 filas (altura real la fija JS).
+       Horizontal: barra azul inferior (se oculta la nativa horizontal).
+       Vertical: scrollbar del propio recuadro. */
+    overflow:auto;
     border-radius:10px;
     border:1px solid var(--gris-borde);
     -webkit-overflow-scrolling:touch;
-    scrollbar-width:none; /* Firefox: oculta scrollbar nativa */
+    max-height: calc(100vh - 280px); /* respaldo antes de que corra JS */
   }
-  .table-wrap::-webkit-scrollbar{
-    display:none; /* Chrome/Safari: oculta scrollbar nativa */
+  /* Oculta solo la barra horizontal nativa; la vertical sí se ve */
+  .table-wrap::-webkit-scrollbar:horizontal{
+    height:0;
+  }
+  .table-wrap::-webkit-scrollbar:vertical{
+    width:10px;
+  }
+  .table-wrap::-webkit-scrollbar-thumb{
+    background:var(--azul-oscuro);
+    border-radius:6px;
+  }
+  .table-wrap::-webkit-scrollbar-track{
+    background:var(--gris-fondo);
   }
   table{
     border-collapse:collapse;
@@ -317,12 +325,18 @@
     text-align:center;
     font-weight:600;
   }
-  /* Sin sticky vertical en thead: el scroll vertical es de la página.
-     El sticky solo horizontal (OT / Permiso) evita el tapado y el temblor. */
+  thead tr:first-child th{
+    position:sticky;
+    top:0;
+    z-index:22;
+  }
   thead tr.sub-head th{
     background:#2A8E95;
     font-size:11px;
     padding:5px;
+    position:sticky;
+    top:var(--head-row1-height, 36px);
+    z-index:21;
   }
   th.sticky-col, td.sticky-col{
     position:sticky;
@@ -340,10 +354,11 @@
     box-shadow:none;
     border-right:1px solid var(--gris-borde);
   }
+  /* z-index alto + top:0 para que OT/Permiso no los tape "Documentos" al scrollear */
   thead th.sticky-col, thead th.sticky-col2{
     background:var(--azul-oscuro);
-    z-index:14;
-    /* Asegura que el texto del encabezado no quede tapado al scrollear */
+    top:0;
+    z-index:30;
     vertical-align:middle;
   }
   tbody tr:nth-child(even) td:not(.sticky-col):not(.sticky-col2){background:#F8FBFB;}
@@ -2280,15 +2295,22 @@ function actualizarAlturaHeader(){
 window.addEventListener('resize', actualizarAlturaHeader);
 
 /* =====================================================
-   ALTURA DE LA TABLA
-   Ya no se limita la altura del .table-wrap: el scroll vertical es el
-   de la página (así se ven muchas más filas y no tiembla el sticky).
-   Esta función solo limpia cualquier max-height inline viejo.
+   ALTURA DE LA TABLA ACTIVA (~10 filas visibles)
 ===================================================== */
+const FILAS_TABLA_VISIBLE = 10;
+
 function actualizarAlturaTablas(){
-  document.querySelectorAll('.table-wrap').forEach(wrap=>{
-    wrap.style.maxHeight = '';
-  });
+  const wrap = getActiveTableWrap();
+  if(!wrap || wrap.offsetParent === null) return;
+  const table = wrap.querySelector('table');
+  if(!table) return;
+  const thead = table.querySelector('thead');
+  const fila = table.querySelector('tbody tr');
+  const headH = thead ? thead.offsetHeight : 64;
+  // Si no hay filas aún, usa una estimación razonable por fila.
+  const rowH = fila ? Math.max(fila.offsetHeight, 36) : 52;
+  const alto = headH + (rowH * FILAS_TABLA_VISIBLE) + 2;
+  wrap.style.maxHeight = alto + 'px';
 }
 
 /* =====================================================
@@ -2304,6 +2326,8 @@ document.getElementById('btnBackToTop').addEventListener('click', ()=>{
   const tab = activeBtn ? activeBtn.dataset.tab : 'docs';
   const panel = document.getElementById('panel-' + tab);
   (panel || document.body).scrollIntoView({ behavior:'smooth', block:'start' });
+  const wrap = getActiveTableWrap();
+  if(wrap) wrap.scrollTop = 0;
 });
 
 /* =====================================================
@@ -2331,15 +2355,6 @@ function getActiveTableWrap(){
   return document.getElementById('tableWrapManejo');
 }
 
-let sincronizandoScroll = false;
-
-// Libera el flag en el siguiente frame: si se pone en false al instante,
-// algunos navegadores disparan el evento scroll DESPUÉS y el sync doble
-// hace “temblar” el scroll horizontal.
-function liberarSyncScroll(){
-  requestAnimationFrame(()=>{ sincronizandoScroll = false; });
-}
-
 // Mide el ancho real de la columna OT sticky y lo usa como left de Permiso.
 function actualizarAnchosSticky(){
   const wrap = getActiveTableWrap();
@@ -2352,6 +2367,31 @@ function actualizarAnchosSticky(){
   }
 }
 
+// Sync horizontal optimizado: un solo rAF por frame (sin ping-pong ni flag lento).
+let scrollSyncRaf = 0;
+let scrollSyncFrom = null; // 'bar' | 'wrap'
+let scrollSyncLeft = 0;
+
+function pedirSyncScroll(origen, left){
+  scrollSyncFrom = origen;
+  scrollSyncLeft = left;
+  if(scrollSyncRaf) return;
+  scrollSyncRaf = requestAnimationFrame(()=>{
+    scrollSyncRaf = 0;
+    const wrap = getActiveTableWrap();
+    const bar = document.getElementById('bottomScrollbar');
+    if(!wrap || !bar) return;
+    const left = scrollSyncLeft;
+    const from = scrollSyncFrom;
+    scrollSyncFrom = null;
+    if(from === 'bar'){
+      if(wrap.scrollLeft !== left) wrap.scrollLeft = left;
+    }else if(from === 'wrap'){
+      if(bar.scrollLeft !== left) bar.scrollLeft = left;
+    }
+  });
+}
+
 function actualizarBottomScrollbar(){
   requestAnimationFrame(()=>{
     const wrap = getActiveTableWrap();
@@ -2361,8 +2401,6 @@ function actualizarBottomScrollbar(){
     const table = wrap.querySelector('table');
     if(!table) return;
 
-    actualizarAnchosSticky();
-
     const rect = wrap.getBoundingClientRect();
     bar.style.left = rect.left + 'px';
     bar.style.width = rect.width + 'px';
@@ -2371,9 +2409,7 @@ function actualizarBottomScrollbar(){
     inner.style.width = anchoReal + 'px';
     bar.style.display = (anchoReal > rect.width + 1) ? 'block' : 'none';
 
-    sincronizandoScroll = true;
-    bar.scrollLeft = wrap.scrollLeft;
-    liberarSyncScroll();
+    if(bar.scrollLeft !== wrap.scrollLeft) bar.scrollLeft = wrap.scrollLeft;
   });
 }
 
@@ -2384,35 +2420,31 @@ function initScrollSync(){
   const wrapManejo = document.getElementById('tableWrapManejo');
 
   bar.addEventListener('scroll', ()=>{
-    if(sincronizandoScroll) return;
-    const wrap = getActiveTableWrap();
-    if(!wrap) return;
-    sincronizandoScroll = true;
-    wrap.scrollLeft = bar.scrollLeft;
-    liberarSyncScroll();
+    pedirSyncScroll('bar', bar.scrollLeft);
   }, { passive:true });
 
   [wrapDocs, wrapRevs, wrapManejo].forEach(wrap=>{
     if(!wrap) return;
     wrap.addEventListener('scroll', ()=>{
-      if(sincronizandoScroll) return;
       if(wrap !== getActiveTableWrap()) return;
-      sincronizandoScroll = true;
-      bar.scrollLeft = wrap.scrollLeft;
-      liberarSyncScroll();
+      // Solo sincroniza el eje X con la barra azul (ignora scroll vertical del wrap)
+      pedirSyncScroll('wrap', wrap.scrollLeft);
     }, { passive:true });
   });
 
   window.addEventListener('resize', ()=>{
     actualizarAnchosSticky();
+    actualizarAlturaTablas();
     actualizarBottomScrollbar();
   });
   window.addEventListener('orientationchange', ()=>{
     actualizarAnchosSticky();
+    actualizarAlturaTablas();
     actualizarBottomScrollbar();
   });
   window.addEventListener('load', ()=>{
     actualizarAnchosSticky();
+    actualizarAlturaTablas();
     actualizarBottomScrollbar();
   });
 }
@@ -3426,11 +3458,17 @@ document.getElementById('btnExportPNG').addEventListener('click', ()=>{
   if(activeTab==='revs') target = document.getElementById('panel-revs');
   else if(activeTab==='manejo') target = document.getElementById('panel-manejo');
 
+  const wrap = getActiveTableWrap();
+  const prevMaxHeight = wrap ? wrap.style.maxHeight : null;
+  if(wrap) wrap.style.maxHeight = 'none';
+
   html2canvas(target, { scale:2, backgroundColor:'#ffffff' }).then(canvas=>{
     const link = document.createElement('a');
     link.download = 'revision_documental_'+activeTab+'.png';
     link.href = canvas.toDataURL('image/png');
     link.click();
+  }).finally(()=>{
+    if(wrap) wrap.style.maxHeight = prevMaxHeight || '';
   });
 });
 
