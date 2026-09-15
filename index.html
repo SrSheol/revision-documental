@@ -354,12 +354,23 @@
     box-shadow:none;
     border-right:1px solid var(--gris-borde);
   }
-  /* z-index alto + top:0 para que OT/Permiso no los tape "Documentos" al scrollear */
-  thead th.sticky-col, thead th.sticky-col2{
+  /* Esquinas sticky del thead: por encima de "Documentos" (z-index 22) */
+  thead tr:first-child th.sticky-col,
+  thead tr:first-child th.sticky-col2{
     background:var(--azul-oscuro);
     top:0;
     z-index:30;
     vertical-align:middle;
+  }
+  /* Celdas vacías bajo OT/Permiso en la 2ª fila (reemplazan el rowspan
+     que hacía que el fondo de Documentos tapara el texto). */
+  thead tr.sub-head th.sticky-col,
+  thead tr.sub-head th.sticky-col2{
+    background:var(--azul-oscuro);
+    top:var(--head-row1-height, 36px);
+    z-index:30;
+    padding:5px;
+    border-bottom:1px solid rgba(255,255,255,0.12);
   }
   tbody tr:nth-child(even) td:not(.sticky-col):not(.sticky-col2){background:#F8FBFB;}
   tbody tr:nth-child(even) td.sticky-col, tbody tr:nth-child(even) td.sticky-col2{background:#F8FBFB;}
@@ -1256,8 +1267,8 @@
       <table id="tableDocs">
         <thead>
           <tr>
-            <th class="sticky-col" rowspan="2" style="min-width:60px;">OT</th>
-            <th class="sticky-col2" rowspan="2" style="min-width:170px;">Permiso CRE/CNE</th>
+            <th class="sticky-col" style="min-width:60px;">OT</th>
+            <th class="sticky-col2" style="min-width:170px;">Permiso CRE/CNE</th>
             <th id="docsHeadRange" colspan="22">Documentos</th>
             <th rowspan="2" style="min-width:230px;">Listos</th>
             <th rowspan="2" style="min-width:230px;">Faltantes</th>
@@ -2588,6 +2599,15 @@ function limpiarFiltrosDocs(){
 function renderDocsHead(){
   const sub = document.getElementById('docsSubHead');
   sub.innerHTML = '';
+  // Esquinas bajo OT / Permiso (sin rowspan): evitan que "Documentos" tape el texto.
+  const thOt = document.createElement('th');
+  thOt.className = 'sticky-col';
+  thOt.setAttribute('aria-hidden', 'true');
+  sub.appendChild(thOt);
+  const thPerm = document.createElement('th');
+  thPerm.className = 'sticky-col2';
+  thPerm.setAttribute('aria-hidden', 'true');
+  sub.appendChild(thPerm);
   for(let i=1;i<=NUM_DOCS;i++){
     const th = document.createElement('th');
     th.textContent = 'D'+i;
